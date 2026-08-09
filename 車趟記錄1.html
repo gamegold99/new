@@ -294,12 +294,38 @@ find('trash-count').innerText = DB.trash.length;
 renderHistory();
 if (find('trashContainer').style.display === 'block') renderTrash();
 if (find('priceSettingsContainer').style.display === 'block') renderSettings();
+/*
+ * 地點清單不能只依賴價格/里程規則。
+ * 舊車趟本身就保存了起點、終點與停靠點，因此匯入舊資料後，
+ * 應直接把這些行政區加入自動完成清單，不需要重新手動輸入。
+ */
 var locs = {};
+
+function addLoc(v) {
+    v = asText(v);
+    if (v) locs[v] = true;
+}
+
 Object.keys(DB.km).concat(Object.keys(DB.price)).forEach(function(k) {
-var p = k.split('-'); locs[p[0]] = locs[p[1]] = true;
+    var p = k.split('-');
+    addLoc(p[0]);
+    addLoc(p.slice(1).join('-'));
 });
+
+DB.logs.concat(DB.trash).forEach(function(r) {
+    addLoc(r.start);
+    addLoc(r.from);
+    addLoc(r.end);
+    addLoc(r.to);
+
+    if (Array.isArray(r.dests)) r.dests.forEach(addLoc);
+    if (Array.isArray(r.stops)) r.stops.forEach(addLoc);
+});
+
 var h = [];
-Object.keys(locs).forEach(function(l) { h.push('<option value="', l, '">'); });
+Object.keys(locs).sort().forEach(function(l) {
+    h.push('<option value="', l.replace(/&/g, '&amp;').replace(/"/g, '&quot;'), '">');
+});
 find('location-options').innerHTML = h.join('');
 }
 
