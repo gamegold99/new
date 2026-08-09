@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#2c3e50">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">\n<meta name="apple-mobile-web-app-title" content="物流業績">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="物流業績">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>物流業績旗艦版</title>
@@ -461,9 +462,13 @@ window.editAmount = function(id) {
     if (!isFinite(currentAmount) || currentAmount < 0) currentAmount = 0;
 
     var input = window.prompt(
-        "修改這筆車趟的業績金額\n\n目前金額：NT " +
+        "修改這筆車趟的業績金額
+
+目前金額：NT " +
         currentAmount.toLocaleString() +
-        " 元\n\n請輸入新的金額：",
+        " 元
+
+請輸入新的金額：",
         String(currentAmount)
     );
 
