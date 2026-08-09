@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trip-manager-pwa-v2';
+const CACHE_NAME = 'trip-manager-pwa-v3';
 const APP_SHELL = [
   './車趟記錄1.html',
   './manifest.webmanifest',
@@ -9,7 +9,7 @@ const APP_SHELL = [
   './cloud-sync.js'
 ];
 
-const RUNTIME_CACHE = 'trip-manager-runtime-v2';
+const RUNTIME_CACHE = 'trip-manager-runtime-v3';
 const EXTERNAL_ASSETS = [
   'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/xlsx.full.min.js',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
