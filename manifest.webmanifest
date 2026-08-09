@@ -1,0 +1,33 @@
+{
+  "name": "物流業績管理系統",
+  "short_name": "物流業績",
+  "description": "個人貨運司機的車趟、業績與雲端同步管理工具。",
+  "lang": "zh-TW",
+  "dir": "ltr",
+  "start_url": "./車趟記錄1.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8fafb",
+  "theme_color": "#2c3e50",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

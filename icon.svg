@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">物流業績管理系統</title>
+  <rect width="512" height="512" rx="104" fill="#2c3e50"/>
+  <path d="M84 150c0-22 18-40 40-40h205c22 0 40 18 40 40v146H84V150Z" fill="#f8fafb"/>
+  <path d="M369 188h52c16 0 30 9 37 23l28 61v24h-117V188Z" fill="#e67e22"/>
+  <path d="M84 296h402v35c0 22-18 40-40 40H124c-22 0-40-18-40-40v-35Z" fill="#dfe8ec"/>
+  <circle cx="173" cy="371" r="49" fill="#1f2d3a"/><circle cx="173" cy="371" r="22" fill="#f8fafb"/>
+  <circle cx="391" cy="371" r="49" fill="#1f2d3a"/><circle cx="391" cy="371" r="22" fill="#f8fafb"/>
+  <rect x="124" y="147" width="170" height="66" rx="12" fill="#e67e22"/>
+  <path d="M323 137v111" stroke="#2c3e50" stroke-width="20" stroke-linecap="round"/>
+  <path d="M323 248l-33-33m33 33 33-33" fill="none" stroke="#2c3e50" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

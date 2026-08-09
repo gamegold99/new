@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#2c3e50">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">\n<meta name="apple-mobile-web-app-title" content="物流業績">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>物流業績旗艦版</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+--primary: #2c3e50; --accent: #e67e22; --bg: #f8fafb;
+--success: #27ae60; --danger: #e74c3c; --gray: #95a5a6;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #333; line-height: 1.6; }
+.container { max-width: 600px; margin: 0 auto; padding-bottom: 120px; }
+h2 { text-align: center; color: var(--primary); margin: 10px 0 25px; font-weight: 800; letter-spacing: 1px; }
+
+/* 現代感卡片設計 */
+.card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid rgba(0,0,0,0.02); }
+.form-group { margin-bottom: 18px; }
+label { display: block; margin-bottom: 8px; font-weight: 700; color: #4a5568; font-size: 0.95em; }
+input, select {
+width: 100%; padding: 12px 16px; border: 1.5px solid #edf2f7; border-radius: 12px; box-sizing: border-box; font-size: 16px; transition: all 0.2s ease; background: #fdfdfd;
+}
+input:focus, select:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.1); background: white; }
+
+/* 佈局工具 */
+.flex-row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+.flex-1 { flex: 1; }
+.btn-outline { background: #fff; color: var(--primary); border: 1.5px dashed #cbd5e0; padding: 12px; font-size: 15px; border-radius: 12px; width: 100%; cursor: pointer; font-weight: 600; margin-top: 5px; }
+.btn-icon { background: #fff; color: var(--danger); border: 1.5px solid #fed7d7; border-radius: 10px; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.btn { width: 100%; padding: 16px; border: none; border-radius: 14px; font-size: 18px; font-weight: 700; cursor: pointer; transition: transform 0.1s, opacity 0.2s; margin-bottom: 12px; }
+.btn:active { transform: scale(0.98); }
+.btn-save { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(44, 62, 80, 0.2); }
+.btn-export { background: var(--success); color: white; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(39, 174, 96, 0.2); }
+
+/* 選項與結果 */
+.checkbox-group { display: flex; align-items: center; gap: 10px; cursor: pointer; background: #f7fafc; padding: 10px 15px; border-radius: 10px; border: 1px solid #edf2f7; }
+.checkbox-group input { width: 22px; height: 22px; margin: 0; }
+.result-display { background: #fffaf0; border-radius: 14px; padding: 18px; border: 1px solid #feebc8; margin-bottom: 20px; }
+.result-display p { margin: 6px 0; font-size: 15px; color: #718096; }
+.net-total { color: var(--danger); font-weight: 900; font-size: 22px; }
+.cloud-status { font-size: 14px; color: #718096; font-weight: 600; }
+.cloud-user { font-size: 14px; color: #4a5568; overflow-wrap: anywhere; margin: 8px 0 12px; }
+
+/* 摺疊面板 */
+.bar { background: #fff; padding: 16px 20px; border-radius: 14px; font-weight: 700; display: flex; justify-content: space-between; cursor: pointer; border: 1px solid #edf2f7; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+.panel { display: none; background: #f8fafb; padding: 15px; border-radius: 14px; border: 1px solid #edf2f7; margin-bottom: 20px; }
+.list-item { display: flex; justify-content: space-between; align-items: center; padding: 14px; border-bottom: 1px solid #edf2f7; font-size: 15px; background: white; margin-bottom: 8px; border-radius: 10px; }
+
+/* 紀錄卡片優化 */
+.log-item { background: white; border-radius: 16px; padding: 18px; margin-bottom: 15px; border: 1px solid #edf2f7; box-shadow: 0 2px 10px rgba(0,0,0,0.02); position: relative; }
+.log-item.completed { border-left: 6px solid var(--success); }
+.log-item.pending { border-left: 6px solid var(--danger); }
+.status-pill { padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 700; }
+.pill-done { background: #c6f6d5; color: #22543d; }
+.pill-wait { background: #fed7d7; color: #822727; }
+
+.text-accent { color: var(--accent); font-weight: 800; }
+.arrow-text { color: #a0aec0; margin: 0 8px; font-weight: 900; }
+datalist { display: none; }
+/* Legacy trash cards still contain this control in old markup; deletion is disabled. */
+button[onclick*="'kill'"] { display: none; }
+</style>
+</head>
+<body>
+
+<div class="container">
+<h2>🚚 物流業績管理系統</h2>
+
+<div class="card" id="cloud-sync-card">
+<div style="display:flex; justify-content:space-between; align-items:center; gap:12px;"><strong style="color:var(--primary); font-size:18px;">☁️ 雲端同步</strong><span id="cloud-status" class="cloud-status">尚未登入</span></div>
+<div id="cloud-signed-out" style="margin-top:12px;"><label for="cloud-email">登入 Email</label><input type="email" id="cloud-email" autocomplete="email" inputmode="email" placeholder="name@example.com"><button type="button" class="btn btn-save" style="margin:12px 0 0;" onclick="window.TripCloud.sendOtp()">寄送登入連結</button></div>
+<div id="cloud-signed-in" style="display:none; margin-top:12px;"><div id="cloud-user" class="cloud-user"></div><button type="button" class="btn btn-save" style="margin-bottom:8px;" onclick="window.TripCloud.syncNow(true)">立即同步</button><button type="button" class="btn-outline" onclick="window.TripCloud.signOut()">登出</button></div>
+</div>
+
+<div class="card">
+<div class="form-group"><label>選擇日期</label><input type="date" id="date"></div>
+<div class="form-group">
+<label>車型噸數</label>
+<select id="ton"><option value="1.5" selected>1.5 噸</option><option value="3.5">3.5 噸</option><option value="0.7">0.7 噸</option></select>
+</div>
+<div class="form-group">
+<label>運輸路線</label>
+<div class="flex-row"><input type="text" id="start" placeholder="起點" list="location-options"><span class="arrow-text">➡</span><input type="text" id="dest1" placeholder="終點" list="location-options"></div>
+<div id="extra-dests-container"></div>
+<button type="button" class="btn-outline" onclick="addExtraDest()">＋ 新增停靠點 (每點 NT200元)</button>
+</div>
+<div id="km-manual-group" class="form-group" style="display:none; background:#ebf8ff; padding:15px; border-radius:12px; border:1px solid #bee3f8;">
+<label>查無預設里程，請手動輸入：</label><input type="number" id="manual-km" inputmode="decimal" placeholder="公里 (km)" oninput="calculateLive()">
+</div>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0;">
+<label class="checkbox-group"><input type="checkbox" id="isRoundTrip"><span>來回(+50%)</span></label>
+<label class="checkbox-group"><input type="checkbox" id="isSlightOverweight"><span style="color:var(--danger); font-weight:700;">小超重(+300)</span></label>
+</div>
+<div class="result-display">
+<p>計費狀態：<span id="calc-mode" class="text-accent">等待輸入...</span></p>
+<p id="km-info" style="display:none;">預估總里程：<span id="display-km" style="font-weight:700; color:#2d3748;">0</span> km</p>
+<p>路線底價：NT <span id="base-price">0</span> 元</p>
+<div style="border-top:1px solid #feebc8; margin-top:10px; padding-top:10px;">
+<span style="font-weight:700; color:#744210;">預估單趟總額：</span><br>
+<span class="net-total">NT <span id="est-gross">0</span> 元</span>
+</div>
+</div>
+<button class="btn btn-save" onclick="saveData()">確認儲存車趟紀錄</button>
+<button class="btn btn-export" onclick="exportExcel()">📊 生成 Excel 對帳報表</button>
+</div>
+
+<div class="bar" onclick="togglePanel('priceSettingsContainer')"><span>⚙️ 價格與里程數據設定</span><span>▼</span></div>
+<div id="priceSettingsContainer" class="panel">
+<div class="card" style="padding:15px; margin-bottom:15px; box-shadow:none; border:1px solid #edf2f7;">
+<label>1. 設定行政區里程 (km)</label>
+<div class="flex-row"><input type="text" id="km-start" placeholder="起點" list="location-options"><span class="arrow-text">➡</span><input type="text" id="km-dest" placeholder="終點" list="location-options"></div>
+<input type="number" id="km-val" placeholder="輸入里程 (km)" inputmode="decimal" style="margin-bottom:10px;">
+<button class="btn btn-save" style="padding:10px; margin:0; font-size:15px; border-radius:10px;" onclick="addSetting('km')">儲存里程規則</button>
+</div>
+<div class="card" style="padding:15px; margin-bottom:0; box-shadow:none; border:1px solid #edf2f7;">
+<label>2. 設定固定路線底價 (元)</label>
+<div class="flex-row"><input type="text" id="set-start" placeholder="起點" list="location-options"><span class="arrow-text">➡</span><input type="text" id="set-dest" placeholder="終點" list="location-options"></div>
+<div class="flex-row"><select id="set-ton" class="flex-1"><option value="1.5">1.5 噸</option><option value="3.5">3.5 噸</option><option value="0.7">0.7 噸</option></select><input type="number" id="set-price" placeholder="底價" inputmode="numeric" class="flex-1"></div>
+<button class="btn btn-save" style="padding:10px; margin:0; font-size:15px; border-radius:10px;" onclick="addSetting('price')">儲存底價規則</button>
+</div>
+<div style="font-size:13px; color:#718096; margin:15px 0 8px; font-weight:700;">目前已儲存之規則 (點擊刪除)：</div>
+<div id="priceListArea" style="max-height:300px; overflow-y:auto;"></div>
+</div>
+
+<div class="bar" style="border-style:dashed; color:var(--gray);" onclick="togglePanel('trashContainer')"><span>🗑️ 資源回收桶 (<span id="trash-count">0</span>)</span><span>▼</span></div>
+<div id="trashContainer" class="panel" style="max-height:400px; overflow-y:auto; border-style:dashed;"></div>
+
+<datalist id="location-options"></datalist>
+<h3 style="color:var(--primary); border-bottom:3px solid #edf2f7; padding-bottom:10px; margin-top:30px; font-weight:800;">📅 歷史車趟與業績統計</h3>
+<div id="logContainer"></div>
+
+<div id="rescue-btn-container" style="display:none; text-align:center; margin-top:40px;">
+<button class="btn" style="background:#edf2f7; color:var(--danger); font-size:15px; width:auto; padding:12px 30px; border-radius:30px; border:1.5px solid #fed7d7;" onclick="rescueOldData()">🚑 偵測到舊版資料，點此救回</button>
+</div>
+</div>
+
+<script>
+var STORAGE_VERSION = 2;
+var STORAGE_VERSION_KEY = 'logistic_storage_version';
+var STORAGE_BACKUP_KEY = 'logistic_storage_backup';
+var STORAGE_KEYS = ['logistic_kms', 'logistic_prices', 'logistic_logs', 'logistic_trash'];
+
+function isPlainObject(value) {
+return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isExpectedStoredType(value, fallback) {
+return Array.isArray(fallback) ? Array.isArray(value) : isPlainObject(value);
+}
+
+function getBackupValue(k, fallback) {
+try {
+var rawBackup = localStorage.getItem(STORAGE_BACKUP_KEY);
+if (!rawBackup) return fallback;
+var backup = JSON.parse(rawBackup);
+if (!backup || !backup.data || typeof backup.data[k] !== 'string') return fallback;
+var value = JSON.parse(backup.data[k]);
+return isExpectedStoredType(value, fallback) ? value : fallback;
+} catch(e) { return fallback; }
+}
+
+function getStoredData(k, d) {
+try {
+var s = localStorage.getItem(k);
+if (!s) return d;
+var value = JSON.parse(s);
+return isExpectedStoredType(value, d) ? value : getBackupValue(k, d);
+} catch(e) { return getBackupValue(k, d); }
+}
+var DB = {
+km: getStoredData('logistic_kms', {}),
+price: getStoredData('logistic_prices', {}),
+logs: getStoredData('logistic_logs', []),
+trash: getStoredData('logistic_trash', [])
+};
+
+var now = new Date();
+var dateStr = [now.getFullYear(), (now.getMonth()+1 < 10 ? '0'+(now.getMonth()+1) : now.getMonth()+1), (now.getDate() < 10 ? '0'+now.getDate() : now.getDate())].join('-');
+document.getElementById('date').value = dateStr;
+
+var oldLogs = getStoredData('carLogs', []);
+if (oldLogs.length > 0 && (localStorage.getItem('is_rescued') !== 'true' || DB.logs.length === 0)) {
+document.getElementById('rescue-btn-container').style.display = 'block';
+}
+
+var find = function(id) { return document.getElementById(id); };
+var asText = function(value) { return typeof value === 'string' ? value.trim() : ''; };
+var asNumber = function(value, fallback) {
+var number = Number(value);
+return isFinite(number) && number >= 0 ? number : fallback;
+};
+var asBoolean = function(value) { return value === true || value === 'true' || value === 1; };
+
+/* Keeps the existing fields working while adding the v2 unified trip fields. */
+function normalizeTrip(record) {
+record = isPlainObject(record) ? record : {};
+var legacyDests = Array.isArray(record.dests) ? record.dests.map(asText).filter(Boolean) : [];
+var stops = Array.isArray(record.stops) ? record.stops.map(asText).filter(Boolean) : legacyDests.slice(1);
+var destination = asText(record.to) || legacyDests[0] || '';
+var origin = asText(record.from) || asText(record.start);
+var total = asNumber(record.totalPrice, asNumber(record.gross, 0));
+var createdAt = record.createdAt || record.id || new Date().getTime();
+var completed = record.completed === undefined ? asBoolean(record.isCompleted) : asBoolean(record.completed);
+var overweight = record.isOverWeight === undefined ? asBoolean(record.isSlightOverweight) : asBoolean(record.isOverWeight);
+
+record.id = record.id || createdAt;
+record.date = asText(record.date);
+record.truckType = asText(record.truckType) || asText(record.ton);
+record.from = origin;
+record.to = destination;
+record.stops = stops;
+record.isRoundTrip = asBoolean(record.isRoundTrip);
+record.isOverWeight = overweight;
+record.distance = asNumber(record.distance, 0);
+record.basePrice = asNumber(record.basePrice, 0);
+record.totalPrice = total;
+record.completed = completed;
+record.createdAt = createdAt;
+record.updatedAt = record.updatedAt || createdAt;
+
+/* Legacy aliases are deliberately retained for every existing renderer. */
+record.ton = record.truckType;
+record.start = record.from;
+record.dests = destination ? [destination].concat(stops) : stops.slice();
+record.gross = total;
+record.isSlightOverweight = overweight;
+record.isCompleted = completed;
+return record;
+}
+
+function normalizeTripCollection(collection) {
+return Array.isArray(collection) ? collection.map(normalizeTrip) : [];
+}
+
+var commit = function() {
+var sortFn = function(a,b) { return new Date(b.date) - new Date(a.date) || b.id - a.id; };
+DB.km = isPlainObject(DB.km) ? DB.km : {};
+DB.price = isPlainObject(DB.price) ? DB.price : {};
+DB.logs = normalizeTripCollection(DB.logs);
+DB.trash = normalizeTripCollection(DB.trash);
+DB.logs.sort(sortFn); DB.trash.sort(sortFn);
+var data = {
+'logistic_kms': JSON.stringify(DB.km),
+'logistic_prices': JSON.stringify(DB.price),
+'logistic_logs': JSON.stringify(DB.logs),
+'logistic_trash': JSON.stringify(DB.trash)
+};
+var previous = {};
+try {
+STORAGE_KEYS.forEach(function(key) { previous[key] = localStorage.getItem(key); });
+/* Write the backup before changing any primary key. */
+localStorage.setItem(STORAGE_BACKUP_KEY, JSON.stringify({ version: STORAGE_VERSION, savedAt: new Date().toISOString(), data: previous }));
+STORAGE_KEYS.forEach(function(key) { localStorage.setItem(key, data[key]); });
+localStorage.setItem(STORAGE_VERSION_KEY, String(STORAGE_VERSION));
+} catch(e) {
+try {
+STORAGE_KEYS.forEach(function(key) {
+if (previous[key] === null || previous[key] === undefined) localStorage.removeItem(key);
+else localStorage.setItem(key, previous[key]);
+});
+} catch(restoreError) {}
+alert('資料暫時無法儲存，已保留原有資料。請確認瀏覽器儲存空間後再試一次。');
+return false;
+}
+updateUI();
+return true;
+};
+
+function migrateStorage() {
+var version = 1;
+try { version = parseInt(localStorage.getItem(STORAGE_VERSION_KEY), 10) || 1; } catch(e) {}
+var needsMigration = version < STORAGE_VERSION;
+DB.logs = normalizeTripCollection(DB.logs);
+DB.trash = normalizeTripCollection(DB.trash);
+if (needsMigration) commit();
+}
+
+function updateUI() {
+find('trash-count').innerText = DB.trash.length;
+renderHistory();
+if (find('trashContainer').style.display === 'block') renderTrash();
+if (find('priceSettingsContainer').style.display === 'block') renderSettings();
+var locs = {};
+Object.keys(DB.km).concat(Object.keys(DB.price)).forEach(function(k) {
+var p = k.split('-'); locs[p[0]] = locs[p[1]] = true;
+});
+var h = [];
+Object.keys(locs).forEach(function(l) { h.push('<option value="', l, '">'); });
+find('location-options').innerHTML = h.join('');
+}
+
+var watch = ['ton', 'start', 'dest1', 'isRoundTrip', 'isSlightOverweight'];
+for (var i = 0; i < watch.length; i++) {
+var el = find(watch[i]);
+if (el) { el.addEventListener('change', calculateLive); if (el.tagName === 'INPUT') el.addEventListener('input', calculateLive); }
+}
+
+function addExtraDest() {
+var b = document.createElement('div'); b.className = 'flex-row';
+b.innerHTML = ['<span class="arrow-text" style="margin-left:15px;">➡</span>',
+'<input type="text" class="extra-dest-input flex-1" placeholder="停靠點" list="location-options" oninput="calculateLive()">',
+'<button type="button" class="btn-icon" onclick="this.parentElement.remove(); calculateLive();">✖</button>'].join('');
+find('extra-dests-container').appendChild(b); b.querySelector('input').focus();
+}
+
+function calculateLive() {
+var t = find('ton').value, s = find('start').value.trim(), d = find('dest1').value.trim();
+var k = s+'-'+d, rk = d+'-'+s, b = 0, txt = "等待輸入中...", kms = 0;
+if (DB.price[k] && DB.price[k][t]) { b = parseInt(DB.price[k][t]); txt = "已套用固定底價"; }
+else if (DB.price[rk] && DB.price[rk][t]) { b = parseInt(DB.price[rk][t]); txt = "已套用固定底價"; }
+else if (s !== "" && d !== "") {
+kms = DB.km[k] || DB.km[rk] || parseFloat(find('manual-km').value) || 0;
+if (kms > 0) {
+txt = "里程自動試算中";
+var rate = (t === "1.5" ? (800+kms*25) : (t === "3.5" ? (1000+kms*30) : (600+kms*20)));
+b = Math.round(rate / 100) * 100;
+find('display-km').innerText = kms;
+} else txt = "請輸入里程資訊";
+find('km-manual-group').style.display = kms > 0 ? 'none' : 'block';
+find('km-info').style.display = kms > 0 ? 'block' : 'none';
+}
+var ex = document.querySelectorAll('.extra-dest-input').length;
+var f = b;
+if (b > 0) { if (find('isRoundTrip').checked) f += Math.round(b*0.5); f += (ex*200); if (find('isSlightOverweight').checked) f += 300; }
+find('calc-mode').innerText = txt; find('base-price').innerText = b.toLocaleString();
+find('est-gross').innerText = f.toLocaleString(); return f;
+}
+
+function saveData() {
+var f = calculateLive(), s = find('start').value.trim(), d = find('dest1').value.trim();
+if (f === 0 || s === "" || d === "") { alert("路線資料不完整"); return; }
+var pts = [d]; var ins = document.querySelectorAll('.extra-dest-input');
+for (var i=0; i<ins.length; i++) { if (ins[i].value.trim() !== "") pts.push(ins[i].value.trim()); }
+DB.logs.push({ id: new Date().getTime(), date: find('date').value, ton: find('ton').value, start: s, dests: pts, gross: f, isRoundTrip: find('isRoundTrip').checked, isSlightOverweight: find('isSlightOverweight').checked, isCompleted: false });
+if (!commit()) return;
+find('start').value = find('dest1').value = find('manual-km').value = find('extra-dests-container').innerHTML = "";
+find('isRoundTrip').checked = find('isSlightOverweight').checked = false; calculateLive();
+}
+
+function addSetting(m) {
+if (m === 'km') {
+var s = find('km-start').value.trim(), d = find('km-dest').value.trim(), v = parseFloat(find('km-val').value);
+if (s && d && v) { DB.km[s+'-'+d] = v; find('km-val').value = ""; commit(); alert("規則已儲存"); }
+} else {
+var s2 = find('set-start').value.trim(), d2 = find('set-dest').value.trim(), t = find('set-ton').value, p = parseInt(find('set-price').value);
+if (s2 && d2 && p) { if (!DB.price[s2+'-'+d2]) DB.price[s2+'-'+d2] = {}; DB.price[s2+'-'+d2][t] = p; find('set-price').value = ""; commit(); alert("規則已儲存"); }
+}
+calculateLive();
+}
+
+function delSet(m, k, t) {
+if (!confirm("確定要刪除此規則？")) return;
+if (m === 'km') { delete DB.km[k]; } else { delete DB.price[k][t]; if (Object.keys(DB.price[k]).length === 0) delete DB.price[k]; }
+commit(); calculateLive();
+}
+
+function renderSettings() {
+var h = [];
+Object.keys(DB.price).sort().forEach(function(k) {
+Object.keys(DB.price[k]).sort().forEach(function(t) {
+h.push('<div class="list-item"><span><b>', k.replace('-',' ➡ '), '</b> (', t, '噸) :<br><span style="color:var(--primary); font-weight:800;">NT ', DB.price[k][t].toLocaleString(), ' 元</span></span>',
+'<button class="btn-sm" style="background:var(--danger);" onclick="delSet(\'price\',\'', k, '\',\'', t, '\')">刪除</button></div>');
+});
+});
+Object.keys(DB.km).sort().forEach(function(k) {
+h.push('<div class="list-item" style="background:#fdfdfd; border:1px dashed #edf2f7;"><span><b>', k.replace('-',' ➡ '), '</b> (里程) :<br><span style="color:var(--accent); font-weight:800;">', DB.km[k], ' km</span></span>',
+'<button class="btn-sm" style="background:var(--gray);" onclick="delSet(\'km\',\'', k, '\')">刪除</button></div>');
+});
+find('priceListArea').innerHTML = h.join('') || '<p style="text-align:center; color:#a0aec0; padding:20px;">尚無自訂規則</p>';
+}
+
+function togglePanel(id) {
+var p = find(id); p.style.display = (p.style.display === 'block' ? 'none' : 'block'); updateUI();
+}
+
+function renderHistory() {
+var grps = {};
+DB.logs.forEach(function(r) {
+var m = r.date.substring(0,7); if (!grps[m]) grps[m] = { items: [], sum: 0, completedSum: 0 };
+grps[m].items.push(r); grps[m].sum += r.gross; if (r.isCompleted) grps[m].completedSum += r.gross;
+});
+var h = [];
+Object.keys(grps).sort().reverse().forEach(function(m) {
+var itemsH = []; grps[m].items.forEach(function(r) { itemsH.push(buildCard(r, false)); });
+var listId = 'list-'+m;
+var isVisible = find(listId) ? find(listId).style.display : 'none';
+h.push('<div class="month-group"><div class="month-header" onclick="var el=find(\'', listId, '\'); el.style.display=(el.style.display===\'block\'?\'none\':\'block\')">',
+'<div><div style="font-size:1.2em; font-weight:800;">📅 ', m.replace('-','年'), '月</div><div class="month-count">共 ', grps[m].items.length, ' 趟</div></div>',
+'<div style="text-align:right;"><div style="font-size:13px; color:#718096;">原價總額: ', grps[m].sum.toLocaleString(), ' 元</div>',
+'<div class="month-income">實領 NT ', Math.round(grps[m].completedSum*0.93).toLocaleString(), ' 元</div></div></div>',
+'<div class="month-list" id="', listId, '" style="display:', isVisible, '; padding:15px; background:#f7fafc;">', itemsH.join(''), '</div></div>');
+});
+find('logContainer').innerHTML = h.join('');
+}
+
+function renderTrash() {
+var h = []; if (DB.trash.length === 0) h.push('<p style="text-align:center; color:#a0aec0; padding:20px;">回收桶目前是空的</p>');
+else DB.trash.forEach(function(r) { h.push(buildCard(r, true)); });
+find('trashContainer').innerHTML = h.join('');
+}
+
+function buildCard(r, isTrash) {
+var tag = (r.isRoundTrip ? "來回" : "單趟"); if (r.isSlightOverweight) tag += " +小超重";
+if (r.dests.length > 1) tag += " +多點x" + (r.dests.length - 1);
+var btns = isTrash ?
+(['<button class="btn-sm" style="background:var(--primary);" onclick="move(', r.id, ',\'back\')">復原</button>',
+'<button class="btn-sm" style="background:var(--gray); margin-left:10px;" onclick="move(', r.id, ',\'kill\')">永久刪除</button>'].join('')) :
+(['<label class="checkbox-group" style="background:transparent; border:none; padding:0;"><input type="checkbox" ', (r.isCompleted?'checked':''), ' onchange="flip(', r.id, ')">',
+'<span class="status-pill ', (r.isCompleted?'pill-done':'pill-wait'), '">', (r.isCompleted?'已完成':'未完成'), '</span></label>',
+'<button class="btn-sm" style="background:#fff; color:var(--danger); border:1px solid #fed7d7;" onclick="move(', r.id, ',\'trash\')">刪除</button>'].join(''));
+return ['<div class="log-item ', (isTrash?'is-trash':(r.isCompleted?'completed':'pending')), '">',
+'<div style="display:flex; justify-content:space-between; margin-bottom:10px; align-items:flex-start;"><span style="color:#718096; font-size:14px; font-weight:700;">', r.date.substring(5), ' | 🚛 ', r.ton, ' 噸</span>',
+'<span style="font-weight:900; color:var(--primary); font-size:17px;">NT ', r.gross.toLocaleString(), ' 元</span></div>',
+'<div style="font-weight:700; color:#2d3748;">', r.start, ' <span class="arrow-text">➡</span> ', r.dests.join(' ➡ '), '</div>',
+'<div style="font-size:13px; color:#a0aec0; margin-top:8px;">標籤：', tag, '</div>',
+'<div class="log-action" style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #edf2f7; margin-top:12px; padding-top:12px;">', btns, '</div></div>'].join('');
+}
+
+window.flip = function(id) {
+for(var i=0; i<DB.logs.length; i++) {
+if(String(DB.logs[i].id) === String(id)) {
+var completed = !DB.logs[i].isCompleted;
+DB.logs[i].isCompleted = completed;
+DB.logs[i].completed = completed;
+DB.logs[i].updatedAt = new Date().toISOString();
+break;
+}
+}
+commit();
+};
+
+window.move = function(id, act) {
+if (act === 'kill' && !confirm("警告：永久刪除將無法救回，確定嗎？")) return;
+if (act === 'trash' && !confirm("確定要將此紀錄移至回收桶？")) return;
+if (act === 'trash') { for(var i=0; i<DB.logs.length; i++) { if(DB.logs[i].id===id) { var movedToTrash = DB.logs.splice(i,1)[0]; movedToTrash.updatedAt = new Date().toISOString(); DB.trash.push(movedToTrash); break; } } }
+if (act === 'back') { for(var j=0; j<DB.trash.length; j++) { if(DB.trash[j].id===id) { var restored = DB.trash.splice(j,1)[0]; restored.updatedAt = new Date().toISOString(); DB.logs.push(restored); break; } } }
+commit();
+};
+
+function exportExcel() {
+if (DB.logs.length === 0) { alert("目前尚無資料可供匯出"); return; }
+var wb = XLSX.utils.book_new(); var grps = {};
+DB.logs.forEach(function(r) { var m = r.date.substring(0,7); if(!grps[m]) grps[m]=[]; grps[m].push(r); });
+Object.keys(grps).sort().reverse().forEach(function(m) {
+var data = [["日期","狀態","車型","起點","目的地明細","行程標籤","原價金額"]]; var s = 0, completedS = 0;
+grps[m].forEach(function(r) {
+var tag = (r.isRoundTrip ? "來回" : "單趟") + (r.isSlightOverweight ? " +小超重" : "");
+data.push([r.date, (r.isCompleted?"已完成":"未完成"), r.ton+"噸", r.start, r.dests.join(' / '), tag, r.gross]); s += r.gross; if (r.isCompleted) completedS += r.gross;
+});
+data.push([],["","","","","月營收原價總計：", s],["","","","","當月實領金額(扣7%)：", Math.round(completedS*0.93)]);
+XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), m);
+});
+XLSX.writeFile(wb, "物流業績對帳單.xlsx");
+}
+
+function rescueOldData() {
+var old = getStoredData('carLogs', []), c = 0;
+old.forEach(function(o) {
+var exists = false; for(var i=0; i<DB.logs.length; i++) { if(DB.logs[i].id === o.id) { exists = true; break; } }
+if (!exists) {
+var t = (o.vehicle==="三噸半"?"3.5":(o.vehicle==="發財車"?"0.7":"1.5"));
+DB.logs.push({ id: o.id, date: o.date, ton: t, start: o.start, dests: o.dests||[], gross: o.gross||1500, isRoundTrip: o.isRoundTrip||false, isSlightOverweight: false, isCompleted: o.isCompleted||false });
+c++;
+}
+});
+localStorage.setItem('is_rescued', 'true'); find('rescue-btn-container').style.display = 'none';
+if (c > 0) { commit(); alert("成功救回 " + c + " 筆歷史紀錄！"); } else { alert("資料同步完成。"); }
+}
+migrateStorage();
+updateUI();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="cloud-config.js"></script>
+<script src="cloud-sync.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+window.addEventListener('load', function() {
+navigator.serviceWorker.register('./service-worker.js').then(function(registration) {
+if (registration.waiting) registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+registration.addEventListener('updatefound', function() {
+var worker = registration.installing;
+if (worker) worker.addEventListener('statechange', function() {
+if (worker.state === 'installed' && navigator.serviceWorker.controller) worker.postMessage({ type: 'SKIP_WAITING' });
+});
+});
+}).catch(function(error) { console.warn('PWA service worker registration failed.', error); });
+});
+var pwaReloading = false;
+navigator.serviceWorker.addEventListener('controllerchange', function() {
+if (pwaReloading) return;
+pwaReloading = true;
+window.location.reload();
+});
+}
+</script>
+</body>
+</html>
