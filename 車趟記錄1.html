@@ -380,31 +380,79 @@ find('isRoundTrip').checked = find('isSlightOverweight').checked = false; calcul
 function addSetting(m) {
 if (m === 'km') {
 var s = find('km-start').value.trim(), d = find('km-dest').value.trim(), v = parseFloat(find('km-val').value);
-if (s && d && v) { DB.km[s+'-'+d] = v; find('km-val').value = ""; commit(); alert("規則已儲存"); }
+if (s && d && v) {
+DB.km[s+'-'+d] = v;
+find('km-val').value = "";
+commit();
+alert("里程規則已更新／新增");
+}
 } else {
 var s2 = find('set-start').value.trim(), d2 = find('set-dest').value.trim(), t = find('set-ton').value, p = parseInt(find('set-price').value);
-if (s2 && d2 && p) { if (!DB.price[s2+'-'+d2]) DB.price[s2+'-'+d2] = {}; DB.price[s2+'-'+d2][t] = p; find('set-price').value = ""; commit(); alert("規則已儲存"); }
+if (s2 && d2 && p) {
+if (!DB.price[s2+'-'+d2]) DB.price[s2+'-'+d2] = {};
+DB.price[s2+'-'+d2][t] = p;
+find('set-price').value = "";
+commit();
+alert("固定底價已更新／新增");
+}
 }
 calculateLive();
 }
 
 function delSet(m, k, t) {
 if (!confirm("確定要刪除此規則？")) return;
-if (m === 'km') { delete DB.km[k]; } else { delete DB.price[k][t]; if (Object.keys(DB.price[k]).length === 0) delete DB.price[k]; }
+if (m === 'km') {
+delete DB.km[k];
+} else {
+if (DB.price[k]) {
+delete DB.price[k][t];
+if (Object.keys(DB.price[k]).length === 0) delete DB.price[k];
+}
+}
 commit(); calculateLive();
+}
+
+function editSet(m, k, t) {
+if (m === 'km') {
+var parts = k.split('-');
+find('km-start').value = parts[0] || '';
+find('km-dest').value = parts.slice(1).join('-') || '';
+find('km-val').value = DB.km[k];
+find('km-start').focus();
+alert("已載入這筆里程規則，修改里程後按「儲存里程規則」即可更新。");
+} else {
+var parts2 = k.split('-');
+find('set-start').value = parts2[0] || '';
+find('set-dest').value = parts2.slice(1).join('-') || '';
+find('set-ton').value = t;
+find('set-price').value = DB.price[k] && DB.price[k][t] != null ? DB.price[k][t] : '';
+find('set-start').focus();
+alert("已載入這筆固定底價規則，修改後按「儲存底價規則」即可更新。");
+}
+var panel = find('priceSettingsContainer');
+if (panel && panel.style.display !== 'block') panel.style.display = 'block';
 }
 
 function renderSettings() {
 var h = [];
 Object.keys(DB.price).sort().forEach(function(k) {
 Object.keys(DB.price[k]).sort().forEach(function(t) {
-h.push('<div class="list-item"><span><b>', k.replace('-',' ➡ '), '</b> (', t, '噸) :<br><span style="color:var(--primary); font-weight:800;">NT ', DB.price[k][t].toLocaleString(), ' 元</span></span>',
-'<button class="btn-sm" style="background:var(--danger);" onclick="delSet(\'price\',\'', k, '\',\'', t, '\')">刪除</button></div>');
+var ek = encodeURIComponent(k);
+var et = encodeURIComponent(t);
+h.push('<div class="list-item"><span><b>', k.replace('-',' ➡ '), '</b> (', t, '噸) :<br><span style="color:var(--primary); font-weight:800;">NT ', Number(DB.price[k][t]).toLocaleString(), ' 元</span></span>',
+'<span style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">',
+'<button class="btn-sm" style="background:var(--primary);" onclick="editSet(\'price\',decodeURIComponent(\'', ek, '\'),decodeURIComponent(\'', et, '\'))">編輯</button>',
+'<button class="btn-sm" style="background:var(--danger);" onclick="delSet(\'price\',decodeURIComponent(\'', ek, '\'),decodeURIComponent(\'', et, '\'))">刪除</button>',
+'</span></div>');
 });
 });
 Object.keys(DB.km).sort().forEach(function(k) {
-h.push('<div class="list-item" style="background:#fdfdfd; border:1px dashed #edf2f7;"><span><b>', k.replace('-',' ➡ '), '</b> (里程) :<br><span style="color:var(--accent); font-weight:800;">', DB.km[k], ' km</span></span>',
-'<button class="btn-sm" style="background:var(--gray);" onclick="delSet(\'km\',\'', k, '\')">刪除</button></div>');
+var ekm = encodeURIComponent(k);
+h.push('<div class="list-item" style="background:#fdfdfd; border:1px dashed #edf2f7;"><span><b>', k.replace('-',' ➡ '), '</b> (里程) :<br><span style="color:var(--accent); font-weight:800;">', Number(DB.km[k]).toLocaleString(), ' km</span></span>',
+'<span style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">',
+'<button class="btn-sm" style="background:var(--primary);" onclick="editSet(\'km\',decodeURIComponent(\'', ekm, '\'))">編輯</button>',
+'<button class="btn-sm" style="background:var(--gray);" onclick="delSet(\'km\',decodeURIComponent(\'', ekm, '\'))">刪除</button>',
+'</span></div>');
 });
 find('priceListArea').innerHTML = h.join('') || '<p style="text-align:center; color:#a0aec0; padding:20px;">尚無自訂規則</p>';
 }
