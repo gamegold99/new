@@ -124,6 +124,12 @@ button[onclick*="'kill'"] { display: none; }
 </div>
 <button class="btn btn-save" onclick="saveData()">確認儲存車趟紀錄</button>
 <button class="btn btn-export" onclick="exportExcel()">📊 生成 Excel 對帳報表</button>
+<div class="card" style="padding:15px; margin-top:10px; box-shadow:none; border:1px dashed #cbd5e0;">
+  <div style="font-weight:800; color:var(--primary); margin-bottom:8px;">📦 舊版資料搬家</div>
+  <div style="font-size:13px; color:#718096; margin-bottom:10px;">匯入 JSON 會與目前資料合併，不會清除現有車趟；正式匯入前會先自動備份目前資料。</div>
+  <input type="file" id="json-import-file" accept=".json,application/json" style="display:none" onchange="importJsonFile(event)">
+  <button type="button" class="btn btn-save" style="margin:0;" onclick="document.getElementById('json-import-file').click()">📥 匯入舊版 JSON 資料</button>
+</div>
 </div>
 
 <div class="bar" onclick="togglePanel('priceSettingsContainer')"><span>⚙️ 價格與里程數據設定</span><span>▼</span></div>
@@ -325,27 +331,73 @@ b.innerHTML = ['<span class="arrow-text" style="margin-left:15px;">➡</span>',
 find('extra-dests-container').appendChild(b); b.querySelector('input').focus();
 }
 
-function calculateLive() {
-var t = find('ton').value, s = find('start').value.trim(), d = find('dest1').value.trim();
-var k = s+'-'+d, rk = d+'-'+s, b = 0, txt = "等待輸入中...", kms = 0;
-if (DB.price[k] && DB.price[k][t]) { b = parseInt(DB.price[k][t]); txt = "已套用固定底價"; }
-else if (DB.price[rk] && DB.price[rk][t]) { b = parseInt(DB.price[rk][t]); txt = "已套用固定底價"; }
-else if (s !== "" && d !== "") {
-kms = DB.km[k] || DB.km[rk] || parseFloat(find('manual-km').value) || 0;
-if (kms > 0) {
-txt = "里程自動試算中";
-var rate = (t === "1.5" ? (800+kms*25) : (t === "3.5" ? (1000+kms*30) : (600+kms*20)));
-b = Math.round(rate / 100) * 100;
-find('display-km').innerText = kms;
-} else txt = "請輸入里程資訊";
-find('km-manual-group').style.display = kms > 0 ? 'none' : 'block';
-find('km-info').style.display = kms > 0 ? 'block' : 'none';
+function getRouteDistance(start, dest) {
+var k = start + '-' + dest, rk = dest + '-' + start;
+var a = Number(DB.km[k]), b = Number(DB.km[rk]);
+if (a > 0) return a;
+if (b > 0) return b;
+return 0;
 }
-var ex = document.querySelectorAll('.extra-dest-input').length;
-var f = b;
-if (b > 0) { if (find('isRoundTrip').checked) f += Math.round(b*0.5); f += (ex*200); if (find('isSlightOverweight').checked) f += 300; }
-find('calc-mode').innerText = txt; find('base-price').innerText = b.toLocaleString();
-find('est-gross').innerText = f.toLocaleString(); return f;
+
+/* 依「最遠端決定主要底價」找出本趟的主要計價端點。優先使用里程資料；
+   若沒有里程但有固定底價，則以可取得的最高底價作為最遠端的後備判定。 */
+function getFarthestPricing(start, dests, truck, manualKm) {
+var list = Array.isArray(dests) ? dests.filter(function(x){ return String(x || '').trim(); }).map(function(x){ return String(x).trim(); }) : [];
+var bestDest = list[0] || '';
+var bestDistance = -1;
+var bestBase = 0;
+var hasDistance = false;
+for (var i=0;i<list.length;i++) {
+    var dest=list[i];
+    var dist=getRouteDistance(start,dest);
+    var k=start+'-'+dest, rk=dest+'-'+start;
+    var fixed=0;
+    if (DB.price[k] && DB.price[k][truck]) fixed=Number(DB.price[k][truck]) || 0;
+    else if (DB.price[rk] && DB.price[rk][truck]) fixed=Number(DB.price[rk][truck]) || 0;
+    if (dist>0) {
+        hasDistance=true;
+        if (dist>bestDistance) { bestDistance=dist; bestDest=dest; bestBase=fixed; }
+    } else if (!hasDistance && fixed>bestBase) {
+        bestDest=dest; bestBase=fixed;
+    }
+}
+if (bestDest && bestDistance > 0) {
+    var key=start+'-'+bestDest, rev=bestDest+'-'+start;
+    if (DB.price[key] && DB.price[key][truck]) bestBase=Number(DB.price[key][truck]) || 0;
+    else if (DB.price[rev] && DB.price[rev][truck]) bestBase=Number(DB.price[rev][truck]) || 0;
+}
+if (!(bestDistance > 0) && manualKm > 0) bestDistance=Number(manualKm);
+if (!(bestBase > 0) && bestDistance > 0) {
+    var rate = (String(truck)==='1.5' ? (800+bestDistance*25) : (String(truck)==='3.5' ? (1000+bestDistance*30) : (600+bestDistance*20)));
+    bestBase=Math.round(rate/100)*100;
+}
+return { dest: bestDest, distance: bestDistance > 0 ? bestDistance : 0, base: bestBase };
+}
+
+function calculateTripAmount(start, dests, truck, roundTrip, overweight, manualKm) {
+var pricing=getFarthestPricing(start,dests,truck,manualKm);
+var base=pricing.base, amount=base;
+if (base>0) {
+    if (roundTrip) amount += Math.round(base*0.5);
+    amount += Math.max(0,(dests.length||0)-1)*200;
+    if (overweight) amount += 300;
+}
+return { amount: Math.round(amount), base: base, distance: pricing.distance, farthest: pricing.dest };
+}
+
+function calculateLive() {
+var t=find('ton').value, s=find('start').value.trim(), d=find('dest1').value.trim();
+var ins=document.querySelectorAll('.extra-dest-input'), dests=[];
+if(d) dests.push(d);
+for(var i=0;i<ins.length;i++){var v=ins[i].value.trim();if(v)dests.push(v);}
+var result=calculateTripAmount(s,dests,t,find('isRoundTrip').checked,find('isSlightOverweight').checked,parseFloat(find('manual-km').value)||0);
+var txt='等待輸入中...';
+if(s && d) txt=result.base>0 ? '已套用最遠端主要底價' : '請輸入里程資訊';
+if(result.distance>0){find('display-km').innerText=result.distance;find('km-info').style.display='block';}
+else{find('display-km').innerText='0';find('km-info').style.display='none';}
+find('km-manual-group').style.display=result.distance>0?'none':'block';
+find('calc-mode').innerText=txt;find('base-price').innerText=result.base.toLocaleString();find('est-gross').innerText=result.amount.toLocaleString();
+return result.amount;
 }
 
 function saveData() {
@@ -558,8 +610,8 @@ window.saveEditTrip = function(){
     if(!isFinite(distance)||distance<0){alert('里程必須是 0 以上的數字');return;}
     if(!isFinite(basePrice)||basePrice<0){alert('路線底價必須是 0 以上的數字');return;}
 
-    // 計價條件有變時，依目前正式系統的計價規則重新計算金額。
-    // 若只改日期、完成狀態或純金額，則保留使用者輸入的金額。
+    // 計價條件有變時，依「最遠端主要底價 + 額外停靠點」重新計算。
+    // 歷史資料若只改日期、完成狀態或純金額，則保留使用者輸入的金額。
     var pricingChanged =
         oldRound !== newRound ||
         oldOverweight !== newOverweight ||
@@ -570,30 +622,14 @@ window.saveEditTrip = function(){
         oldBasePrice !== basePrice;
 
     var calculatedAmount = amount;
+    var calculatedBase = basePrice;
+    var calculatedDistance = distance;
     if (pricingChanged) {
-        var routeKey = from + '-' + dests[0];
-        var reverseKey = dests[0] + '-' + from;
-        var base = 0;
-
-        if (DB.price[routeKey] && DB.price[routeKey][truck]) {
-            base = Number(DB.price[routeKey][truck]);
-        } else if (DB.price[reverseKey] && DB.price[reverseKey][truck]) {
-            base = Number(DB.price[reverseKey][truck]);
-        }
-
-        if (!(base > 0) && distance > 0) {
-            var rate = (String(truck) === '1.5' ? (800 + distance * 25) :
-                        (String(truck) === '3.5' ? (1000 + distance * 30) :
-                        (600 + distance * 20)));
-            base = Math.round(rate / 100) * 100;
-        }
-
-        if (base > 0) {
-            calculatedAmount = base;
-            if (newRound) calculatedAmount += Math.round(base * 0.5);
-            calculatedAmount += Math.max(0, dests.length - 1) * 200;
-            if (newOverweight) calculatedAmount += 300;
-            calculatedAmount = Math.round(calculatedAmount);
+        var calc = calculateTripAmount(from, dests, truck, newRound, newOverweight, distance);
+        if (calc.base > 0) {
+            calculatedAmount = calc.amount;
+            calculatedBase = calc.base;
+            calculatedDistance = calc.distance || distance;
         }
     }
 
@@ -602,7 +638,7 @@ window.saveEditTrip = function(){
     record.start=from;record.from=from;
     record.dests=dests;record.to=dests[0];record.stops=dests.slice(1);
     record.gross=calculatedAmount;record.totalPrice=calculatedAmount;
-    record.distance=distance;record.basePrice=basePrice;
+    record.distance=calculatedDistance;record.basePrice=calculatedBase;
     record.isRoundTrip=newRound;
     record.isSlightOverweight=newOverweight;
     record.isOverWeight=record.isSlightOverweight;
@@ -617,6 +653,36 @@ window.saveEditTrip = function(){
         alert('這筆車趟已完整更新。');
     }
 };
+
+function importJsonFile(event) {
+var file=event.target.files && event.target.files[0];
+if(!file)return;
+var reader=new FileReader();
+reader.onload=function(){
+    try {
+        var parsed=JSON.parse(reader.result);
+        var incoming=Array.isArray(parsed) ? parsed : (Array.isArray(parsed.data) ? parsed.data : (Array.isArray(parsed.logs) ? parsed.logs : []));
+        if(!incoming.length) throw new Error('找不到車趟資料');
+        var normalized=incoming.map(normalizeTrip);
+        var existing={}; DB.logs.forEach(function(r){existing[String(r.id)]=true;});
+        var added=0, skipped=0;
+        normalized.forEach(function(r){
+            if(existing[String(r.id)]) { skipped++; return; }
+            DB.logs.push(r); existing[String(r.id)]=true; added++;
+        });
+        if(!added){ alert('匯入完成，但全部 '+skipped+' 筆都已存在，沒有新增資料。'); }
+        else {
+            if(!commit()) throw new Error('資料儲存失敗');
+            updateUI();
+            alert('舊版資料匯入完成！\n新增：'+added+' 筆\n重複略過：'+skipped+' 筆\n目前總車趟：'+DB.logs.length+' 筆');
+        }
+    } catch(e) {
+        alert('JSON 匯入失敗：'+(e.message || e));
+    }
+    event.target.value='';
+};
+reader.readAsText(file,'utf-8');
+}
 
 function exportExcel() {
 if (DB.logs.length === 0) { alert("目前尚無資料可供匯出"); return; }
