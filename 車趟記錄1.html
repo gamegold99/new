@@ -109,6 +109,12 @@ button[onclick*="'kill'"] { display: none; }
 </div>
 <button class="btn btn-save" onclick="saveData()">確認儲存車趟紀錄</button>
 <button class="btn btn-export" onclick="exportExcel()">📊 生成 Excel 對帳報表</button>
+<div style="margin-top:8px;">
+  <button class="btn" style="background:#5b6b7a;color:#fff;" onclick="document.getElementById('migration-file').click()">📥 匯入舊版資料</button>
+  <input id="migration-file" type="file" accept="application/json,.json" style="display:none" onchange="importMigrationBackup(this)">
+  <button class="btn" style="background:#718096;color:#fff;" onclick="exportMigrationBackup()">📦 匯出目前資料備份</button>
+  <div style="font-size:13px;color:#718096;text-align:center;margin-top:8px;">可把舊版 JSON 資料搬進目前正式 PWA；匯入採合併，不會直接覆蓋現有資料。</div>
+</div>
 </div>
 
 <div class="bar" onclick="togglePanel('priceSettingsContainer')"><span>⚙️ 價格與里程數據設定</span><span>▼</span></div>
@@ -492,6 +498,150 @@ window.editAmount = function(id) {
 
     alert("業績金額已更新為 NT " + newAmount.toLocaleString() + " 元");
 };
+
+function migrationNormalizeRecord(o) {
+    if (!o || typeof o !== 'object') return null;
+    var dests = Array.isArray(o.dests) ? o.dests.filter(Boolean) : [];
+    var destination = o.to || o.end || o.dest || o.dest1 || dests[0] || '';
+    var stops = Array.isArray(o.stops) ? o.stops.filter(Boolean) : dests.slice(1);
+    var ton = String(o.truckType || o.ton || o.vehicle || '1.5');
+    if (ton === '三噸半') ton = '3.5';
+    else if (ton === '發財車') ton = '0.7';
+    if (ton !== '1.5' && ton !== '3.5' && ton !== '0.7') ton = '1.5';
+    var total = Number(o.totalPrice != null ? o.totalPrice : (o.gross != null ? o.gross : (o.total != null ? o.total : 0)));
+    if (!isFinite(total) || total < 0) total = 0;
+    var id = o.id != null ? o.id : (o.createdAt || (Date.now() + Math.random()));
+    return normalizeTrip({
+        id: id,
+        date: o.date || '',
+        ton: ton,
+        truckType: ton,
+        start: o.start || o.from || '',
+        from: o.from || o.start || '',
+        end: destination,
+        to: destination,
+        dests: destination ? [destination].concat(stops) : stops,
+        stops: stops,
+        gross: total,
+        total: total,
+        totalPrice: total,
+        isCompleted: o.isCompleted !== undefined ? o.isCompleted : (o.isDone !== undefined ? o.isDone : o.completed),
+        isDone: o.isDone,
+        completed: o.completed !== undefined ? o.completed : (o.isCompleted !== undefined ? o.isCompleted : o.isDone),
+        isRoundTrip: o.isRoundTrip,
+        isSlightOverweight: o.isSlightOverweight !== undefined ? o.isSlightOverweight : o.isOverWeight,
+        isOverWeight: o.isOverWeight,
+        distance: o.distance || o.manualKm || 0,
+        basePrice: o.basePrice || 0,
+        calcMode: o.calcMode || o.calculationMode || ''
+    });
+}
+
+function readMigrationArray(data, key) {
+    try {
+        var raw = data && data[key];
+        if (raw === undefined || raw === null) return [];
+        if (typeof raw === 'string') raw = JSON.parse(raw);
+        return Array.isArray(raw) ? raw : [];
+    } catch(e) { return []; }
+}
+
+function migrateSettings(data) {
+    var kmRaw = data && data.logistic_kms;
+    var priceRaw = data && data.logistic_prices;
+    try { if (typeof kmRaw === 'string') kmRaw = JSON.parse(kmRaw); } catch(e) { kmRaw = null; }
+    try { if (typeof priceRaw === 'string') priceRaw = JSON.parse(priceRaw); } catch(e) { priceRaw = null; }
+    if (Array.isArray(kmRaw)) {
+        kmRaw.forEach(function(r){
+            if (!r || !r.start || !r.end) return;
+            var v = Number(r.km);
+            if (isFinite(v) && v > 0) DB.km[r.start + '-' + r.end] = v;
+        });
+    } else if (kmRaw && typeof kmRaw === 'object') {
+        Object.keys(kmRaw).forEach(function(k){ var v=Number(kmRaw[k]); if(isFinite(v)&&v>0) DB.km[k]=v; });
+    }
+    if (Array.isArray(priceRaw)) {
+        priceRaw.forEach(function(r){
+            if (!r || !r.start || !r.end || !r.ton) return;
+            var p = Number(r.price);
+            if (!isFinite(p) || p < 0) return;
+            var k = r.start + '-' + r.end;
+            if (!DB.price[k]) DB.price[k] = {};
+            DB.price[k][r.ton] = p;
+        });
+    } else if (priceRaw && typeof priceRaw === 'object') {
+        Object.keys(priceRaw).forEach(function(k){
+            if (!DB.price[k] || typeof DB.price[k] !== 'object') DB.price[k] = {};
+            Object.keys(priceRaw[k] || {}).forEach(function(t){ DB.price[k][t] = Number(priceRaw[k][t]); });
+        });
+    }
+}
+
+function exportMigrationBackup() {
+    try {
+        commit();
+        var backup = {
+            format: 'logistic-trip-migration-v1',
+            exportedAt: new Date().toISOString(),
+            source: '物流業績管理系統正式版',
+            data: {
+                logistic_logs: localStorage.getItem('logistic_logs') || '[]',
+                logistic_trash: localStorage.getItem('logistic_trash') || '[]',
+                logistic_kms: localStorage.getItem('logistic_kms') || '{}',
+                logistic_prices: localStorage.getItem('logistic_prices') || '{}',
+                carLogs: localStorage.getItem('carLogs') || '[]'
+            }
+        };
+        var blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json;charset=utf-8'});
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = '物流車趟資料備份.json';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    } catch(e) { alert('備份匯出失敗：' + e.message); }
+}
+
+function importMigrationBackup(input) {
+    var file = input && input.files ? input.files[0] : null;
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function() {
+        try {
+            var backup = JSON.parse(reader.result);
+            var data = backup && backup.data ? backup.data : backup;
+            if (!data || typeof data !== 'object') throw new Error('檔案格式不正確');
+            var imported = [];
+            ['logistic_logs','carLogs'].forEach(function(key){ imported = imported.concat(readMigrationArray(data,key)); });
+            var trashImported = readMigrationArray(data,'logistic_trash');
+            if (!imported.length && !trashImported.length) throw new Error('找不到可匯入的車趟資料');
+            if (!confirm('即將匯入 ' + imported.length + ' 筆車趟資料。\n\n匯入會與目前資料合併，不會清空目前資料。\n確定繼續嗎？')) return;
+            var existingIds = {}, existingSignatures = {};
+            DB.logs.forEach(function(r){ existingIds[String(r.id)] = true; existingSignatures[String(r.date)+'|'+String(r.ton)+'|'+String(r.start)+'|'+String(r.dests && r.dests[0])+'|'+String(r.gross)] = true; });
+            var added = 0;
+            imported.forEach(function(o){
+                var r = migrationNormalizeRecord(o); if (!r || !r.date) return;
+                var sig = String(r.date)+'|'+String(r.ton)+'|'+String(r.start)+'|'+String(r.dests && r.dests[0])+'|'+String(r.gross);
+                if (existingIds[String(r.id)] || existingSignatures[sig]) return;
+                existingIds[String(r.id)] = true; existingSignatures[sig] = true; DB.logs.push(r); added++;
+            });
+            var trashAdded = 0;
+            var trashIds = {}; DB.trash.forEach(function(r){ trashIds[String(r.id)] = true; });
+            trashImported.forEach(function(o){ var r=migrationNormalizeRecord(o); if(!r || !r.date || trashIds[String(r.id)]) return; DB.trash.push(r); trashIds[String(r.id)]=true; trashAdded++; });
+            migrateSettings(data);
+            if (!commit()) return;
+            input.value = '';
+            alert('資料搬家完成！\n\n新增車趟：' + added + ' 筆\n回收桶資料：' + trashAdded + ' 筆\n\n目前資料已保留，沒有覆蓋原本紀錄。');
+        } catch(e) {
+            input.value = '';
+            alert('匯入失敗：' + e.message);
+        }
+    };
+    reader.readAsText(file, 'utf-8');
+}
+
 function exportExcel() {
 if (DB.logs.length === 0) { alert("目前尚無資料可供匯出"); return; }
 var wb = XLSX.utils.book_new(); var grps = {};
