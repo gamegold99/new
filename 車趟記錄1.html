@@ -66,6 +66,21 @@ input:focus, select:focus { border-color: var(--accent); outline: none; box-shad
 datalist { display: none; }
 /* Legacy trash cards still contain this control in old markup; deletion is disabled. */
 button[onclick*="'kill'"] { display: none; }
+
+/* 完整編輯視窗 */
+.edit-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.48);display:none;align-items:flex-start;justify-content:center;padding:18px;z-index:9999;overflow:auto;}
+.edit-modal{width:100%;max-width:600px;background:#fff;border-radius:18px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.25);margin:20px 0;}
+.edit-modal h3{margin:0 0 18px;color:var(--primary);text-align:center;}
+.edit-modal .edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.edit-modal .edit-full{grid-column:1/-1;}
+.edit-modal label{display:block;margin-bottom:7px;font-weight:700;color:#4a5568;}
+.edit-modal input,.edit-modal select{width:100%;padding:12px 14px;border:1.5px solid #dfe7ef;border-radius:12px;box-sizing:border-box;font-size:16px;background:#fff;}
+.edit-modal input[type=date]{min-height:48px;}
+.edit-dest-row .edit-dest-input{flex:1;}
+.edit-dest-row button:disabled{border-color:transparent!important;background:transparent!important;}
+.edit-modal .edit-actions{display:flex;gap:10px;margin-top:18px;}
+.edit-modal .edit-actions button{flex:1;}
+@media(max-width:520px){.edit-modal{padding:16px;margin:5px 0}.edit-modal .edit-grid{grid-template-columns:1fr}.edit-modal .edit-full{grid-column:auto}}
 </style>
 </head>
 <body>
@@ -109,12 +124,11 @@ button[onclick*="'kill'"] { display: none; }
 </div>
 <button class="btn btn-save" onclick="saveData()">確認儲存車趟紀錄</button>
 <button class="btn btn-export" onclick="exportExcel()">📊 生成 Excel 對帳報表</button>
-<div style="margin-top:8px;">
-  <button class="btn" style="background:#5b6b7a;color:#fff;" onclick="document.getElementById('migration-file').click()">📥 匯入舊版資料</button>
-  <input id="migration-file" type="file" accept="application/json,.json" style="display:none" onchange="importMigrationBackup(this)">
-  <button class="btn" style="background:#718096;color:#fff;" onclick="exportMigrationBackup()">📦 匯出目前資料備份</button>
-  <button class="btn" style="background:#4a5568;color:#fff;" onclick="exportRawStorageNoCommit()">📦 安全匯出原始資料（不修改資料）</button>
-  <div style="font-size:13px;color:#718096;text-align:center;margin-top:8px;">可把舊版 JSON 資料搬進目前正式 PWA；匯入採合併，不會直接覆蓋現有資料。<br><b style='color:#c05621;'>本版特別保留舊資料的 total 原始運費，避免 totalPrice=0 造成歷史金額變成 0。</b></div>
+<div class="card" style="padding:15px; margin-top:10px; box-shadow:none; border:1px dashed #cbd5e0;">
+  <div style="font-weight:800; color:var(--primary); margin-bottom:8px;">📦 舊版資料搬家</div>
+  <div style="font-size:13px; color:#718096; margin-bottom:10px;">匯入 JSON 會與目前資料合併，不會清除現有車趟；正式匯入前會先自動備份目前資料。</div>
+  <input type="file" id="json-import-file" accept=".json,application/json" style="display:none" onchange="importJsonFile(event)">
+  <button type="button" class="btn btn-save" style="margin:0;" onclick="document.getElementById('json-import-file').click()">📥 匯入舊版 JSON 資料</button>
 </div>
 </div>
 
@@ -136,6 +150,10 @@ button[onclick*="'kill'"] { display: none; }
 <div id="priceListArea" style="max-height:300px; overflow-y:auto;"></div>
 </div>
 
+<div style="margin:12px 0 0; padding:12px; border:1px dashed #cbd5e0; border-radius:10px; background:#f8fafc;">
+<div id="pricing-rebuild-note" style="font-size:13px; color:#718096; line-height:1.6; margin-bottom:8px;">計價規則修復工具</div>
+<button type="button" class="btn btn-save" style="margin:0; padding:10px; font-size:14px; border-radius:10px;" onclick="rebuildPricingFromHistoricalLogs(true)">🔧 從歷史車趟補回計價規則</button>
+</div>
 <div class="bar" style="border-style:dashed; color:var(--gray);" onclick="togglePanel('trashContainer')"><span>🗑️ 資源回收桶 (<span id="trash-count">0</span>)</span><span>▼</span></div>
 <div id="trashContainer" class="panel" style="max-height:400px; overflow-y:auto; border-style:dashed;"></div>
 
@@ -294,38 +312,12 @@ find('trash-count').innerText = DB.trash.length;
 renderHistory();
 if (find('trashContainer').style.display === 'block') renderTrash();
 if (find('priceSettingsContainer').style.display === 'block') renderSettings();
-/*
- * 地點清單不能只依賴價格/里程規則。
- * 舊車趟本身就保存了起點、終點與停靠點，因此匯入舊資料後，
- * 應直接把這些行政區加入自動完成清單，不需要重新手動輸入。
- */
 var locs = {};
-
-function addLoc(v) {
-    v = asText(v);
-    if (v) locs[v] = true;
-}
-
 Object.keys(DB.km).concat(Object.keys(DB.price)).forEach(function(k) {
-    var p = k.split('-');
-    addLoc(p[0]);
-    addLoc(p.slice(1).join('-'));
+var p = k.split('-'); locs[p[0]] = locs[p[1]] = true;
 });
-
-DB.logs.concat(DB.trash).forEach(function(r) {
-    addLoc(r.start);
-    addLoc(r.from);
-    addLoc(r.end);
-    addLoc(r.to);
-
-    if (Array.isArray(r.dests)) r.dests.forEach(addLoc);
-    if (Array.isArray(r.stops)) r.stops.forEach(addLoc);
-});
-
 var h = [];
-Object.keys(locs).sort().forEach(function(l) {
-    h.push('<option value="', l.replace(/&/g, '&amp;').replace(/"/g, '&quot;'), '">');
-});
+Object.keys(locs).forEach(function(l) { h.push('<option value="', l, '">'); });
 find('location-options').innerHTML = h.join('');
 }
 
@@ -343,27 +335,73 @@ b.innerHTML = ['<span class="arrow-text" style="margin-left:15px;">➡</span>',
 find('extra-dests-container').appendChild(b); b.querySelector('input').focus();
 }
 
-function calculateLive() {
-var t = find('ton').value, s = find('start').value.trim(), d = find('dest1').value.trim();
-var k = s+'-'+d, rk = d+'-'+s, b = 0, txt = "等待輸入中...", kms = 0;
-if (DB.price[k] && DB.price[k][t]) { b = parseInt(DB.price[k][t]); txt = "已套用固定底價"; }
-else if (DB.price[rk] && DB.price[rk][t]) { b = parseInt(DB.price[rk][t]); txt = "已套用固定底價"; }
-else if (s !== "" && d !== "") {
-kms = DB.km[k] || DB.km[rk] || parseFloat(find('manual-km').value) || 0;
-if (kms > 0) {
-txt = "里程自動試算中";
-var rate = (t === "1.5" ? (800+kms*25) : (t === "3.5" ? (1000+kms*30) : (600+kms*20)));
-b = Math.round(rate / 100) * 100;
-find('display-km').innerText = kms;
-} else txt = "請輸入里程資訊";
-find('km-manual-group').style.display = kms > 0 ? 'none' : 'block';
-find('km-info').style.display = kms > 0 ? 'block' : 'none';
+function getRouteDistance(start, dest) {
+var k = start + '-' + dest, rk = dest + '-' + start;
+var a = Number(DB.km[k]), b = Number(DB.km[rk]);
+if (a > 0) return a;
+if (b > 0) return b;
+return 0;
 }
-var ex = document.querySelectorAll('.extra-dest-input').length;
-var f = b;
-if (b > 0) { if (find('isRoundTrip').checked) f += Math.round(b*0.5); f += (ex*200); if (find('isSlightOverweight').checked) f += 300; }
-find('calc-mode').innerText = txt; find('base-price').innerText = b.toLocaleString();
-find('est-gross').innerText = f.toLocaleString(); return f;
+
+/* 依「最遠端決定主要底價」找出本趟的主要計價端點。優先使用里程資料；
+   若沒有里程但有固定底價，則以可取得的最高底價作為最遠端的後備判定。 */
+function getFarthestPricing(start, dests, truck, manualKm) {
+var list = Array.isArray(dests) ? dests.filter(function(x){ return String(x || '').trim(); }).map(function(x){ return String(x).trim(); }) : [];
+var bestDest = list[0] || '';
+var bestDistance = -1;
+var bestBase = 0;
+var hasDistance = false;
+for (var i=0;i<list.length;i++) {
+    var dest=list[i];
+    var dist=getRouteDistance(start,dest);
+    var k=start+'-'+dest, rk=dest+'-'+start;
+    var fixed=0;
+    if (DB.price[k] && DB.price[k][truck]) fixed=Number(DB.price[k][truck]) || 0;
+    else if (DB.price[rk] && DB.price[rk][truck]) fixed=Number(DB.price[rk][truck]) || 0;
+    if (dist>0) {
+        hasDistance=true;
+        if (dist>bestDistance) { bestDistance=dist; bestDest=dest; bestBase=fixed; }
+    } else if (!hasDistance && fixed>bestBase) {
+        bestDest=dest; bestBase=fixed;
+    }
+}
+if (bestDest && bestDistance > 0) {
+    var key=start+'-'+bestDest, rev=bestDest+'-'+start;
+    if (DB.price[key] && DB.price[key][truck]) bestBase=Number(DB.price[key][truck]) || 0;
+    else if (DB.price[rev] && DB.price[rev][truck]) bestBase=Number(DB.price[rev][truck]) || 0;
+}
+if (!(bestDistance > 0) && manualKm > 0) bestDistance=Number(manualKm);
+if (!(bestBase > 0) && bestDistance > 0) {
+    var rate = (String(truck)==='1.5' ? (800+bestDistance*25) : (String(truck)==='3.5' ? (1000+bestDistance*30) : (600+bestDistance*20)));
+    bestBase=Math.round(rate/100)*100;
+}
+return { dest: bestDest, distance: bestDistance > 0 ? bestDistance : 0, base: bestBase };
+}
+
+function calculateTripAmount(start, dests, truck, roundTrip, overweight, manualKm) {
+var pricing=getFarthestPricing(start,dests,truck,manualKm);
+var base=pricing.base, amount=base;
+if (base>0) {
+    if (roundTrip) amount += Math.round(base*0.5);
+    amount += Math.max(0,(dests.length||0)-1)*200;
+    if (overweight) amount += 300;
+}
+return { amount: Math.round(amount), base: base, distance: pricing.distance, farthest: pricing.dest };
+}
+
+function calculateLive() {
+var t=find('ton').value, s=find('start').value.trim(), d=find('dest1').value.trim();
+var ins=document.querySelectorAll('.extra-dest-input'), dests=[];
+if(d) dests.push(d);
+for(var i=0;i<ins.length;i++){var v=ins[i].value.trim();if(v)dests.push(v);}
+var result=calculateTripAmount(s,dests,t,find('isRoundTrip').checked,find('isSlightOverweight').checked,parseFloat(find('manual-km').value)||0);
+var txt='等待輸入中...';
+if(s && d) txt=result.base>0 ? '已套用最遠端主要底價' : '請輸入里程資訊';
+if(result.distance>0){find('display-km').innerText=result.distance;find('km-info').style.display='block';}
+else{find('display-km').innerText='0';find('km-info').style.display='none';}
+find('km-manual-group').style.display=result.distance>0?'none':'block';
+find('calc-mode').innerText=txt;find('base-price').innerText=result.base.toLocaleString();find('est-gross').innerText=result.amount.toLocaleString();
+return result.amount;
 }
 
 function saveData() {
@@ -380,81 +418,34 @@ find('isRoundTrip').checked = find('isSlightOverweight').checked = false; calcul
 function addSetting(m) {
 if (m === 'km') {
 var s = find('km-start').value.trim(), d = find('km-dest').value.trim(), v = parseFloat(find('km-val').value);
-if (s && d && v) {
-DB.km[s+'-'+d] = v;
-find('km-val').value = "";
-commit();
-alert("里程規則已更新／新增");
-}
+if (s && d && v) { DB.km[s+'-'+d] = v; find('km-val').value = ""; commit(); alert("規則已儲存"); }
 } else {
 var s2 = find('set-start').value.trim(), d2 = find('set-dest').value.trim(), t = find('set-ton').value, p = parseInt(find('set-price').value);
-if (s2 && d2 && p) {
-if (!DB.price[s2+'-'+d2]) DB.price[s2+'-'+d2] = {};
-DB.price[s2+'-'+d2][t] = p;
-find('set-price').value = "";
-commit();
-alert("固定底價已更新／新增");
-}
+if (s2 && d2 && p) { if (!DB.price[s2+'-'+d2]) DB.price[s2+'-'+d2] = {}; DB.price[s2+'-'+d2][t] = p; find('set-price').value = ""; commit(); alert("規則已儲存"); }
 }
 calculateLive();
 }
 
 function delSet(m, k, t) {
 if (!confirm("確定要刪除此規則？")) return;
-if (m === 'km') {
-delete DB.km[k];
-} else {
-if (DB.price[k]) {
-delete DB.price[k][t];
-if (Object.keys(DB.price[k]).length === 0) delete DB.price[k];
-}
-}
+if (m === 'km') { delete DB.km[k]; } else { delete DB.price[k][t]; if (Object.keys(DB.price[k]).length === 0) delete DB.price[k]; }
 commit(); calculateLive();
-}
-
-function editSet(m, k, t) {
-if (m === 'km') {
-var parts = k.split('-');
-find('km-start').value = parts[0] || '';
-find('km-dest').value = parts.slice(1).join('-') || '';
-find('km-val').value = DB.km[k];
-find('km-start').focus();
-alert("已載入這筆里程規則，修改里程後按「儲存里程規則」即可更新。");
-} else {
-var parts2 = k.split('-');
-find('set-start').value = parts2[0] || '';
-find('set-dest').value = parts2.slice(1).join('-') || '';
-find('set-ton').value = t;
-find('set-price').value = DB.price[k] && DB.price[k][t] != null ? DB.price[k][t] : '';
-find('set-start').focus();
-alert("已載入這筆固定底價規則，修改後按「儲存底價規則」即可更新。");
-}
-var panel = find('priceSettingsContainer');
-if (panel && panel.style.display !== 'block') panel.style.display = 'block';
 }
 
 function renderSettings() {
 var h = [];
 Object.keys(DB.price).sort().forEach(function(k) {
 Object.keys(DB.price[k]).sort().forEach(function(t) {
-var ek = encodeURIComponent(k);
-var et = encodeURIComponent(t);
-h.push('<div class="list-item"><span><b>', k.replace('-',' ➡ '), '</b> (', t, '噸) :<br><span style="color:var(--primary); font-weight:800;">NT ', Number(DB.price[k][t]).toLocaleString(), ' 元</span></span>',
-'<span style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">',
-'<button class="btn-sm" style="background:var(--primary);" onclick="editSet(\'price\',decodeURIComponent(\'', ek, '\'),decodeURIComponent(\'', et, '\'))">編輯</button>',
-'<button class="btn-sm" style="background:var(--danger);" onclick="delSet(\'price\',decodeURIComponent(\'', ek, '\'),decodeURIComponent(\'', et, '\'))">刪除</button>',
-'</span></div>');
+h.push('<div class="list-item"><span><b>', k.replace('-',' ➡ '), '</b> (', t, '噸) :<br><span style="color:var(--primary); font-weight:800;">NT ', DB.price[k][t].toLocaleString(), ' 元</span></span>',
+'<button class="btn-sm" style="background:var(--danger);" onclick="delSet(\'price\',\'', k, '\',\'', t, '\')">刪除</button></div>');
 });
 });
 Object.keys(DB.km).sort().forEach(function(k) {
-var ekm = encodeURIComponent(k);
-h.push('<div class="list-item" style="background:#fdfdfd; border:1px dashed #edf2f7;"><span><b>', k.replace('-',' ➡ '), '</b> (里程) :<br><span style="color:var(--accent); font-weight:800;">', Number(DB.km[k]).toLocaleString(), ' km</span></span>',
-'<span style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">',
-'<button class="btn-sm" style="background:var(--primary);" onclick="editSet(\'km\',decodeURIComponent(\'', ekm, '\'))">編輯</button>',
-'<button class="btn-sm" style="background:var(--gray);" onclick="delSet(\'km\',decodeURIComponent(\'', ekm, '\'))">刪除</button>',
-'</span></div>');
+h.push('<div class="list-item" style="background:#fdfdfd; border:1px dashed #edf2f7;"><span><b>', k.replace('-',' ➡ '), '</b> (里程) :<br><span style="color:var(--accent); font-weight:800;">', DB.km[k], ' km</span></span>',
+'<button class="btn-sm" style="background:var(--gray);" onclick="delSet(\'km\',\'', k, '\')">刪除</button></div>');
 });
 find('priceListArea').innerHTML = h.join('') || '<p style="text-align:center; color:#a0aec0; padding:20px;">尚無自訂規則</p>';
+var rebuildNote = find('pricing-rebuild-note'); if (rebuildNote) rebuildNote.innerText = '目前可從歷史車趟自動補回的高可信計價規則會保留既有測試規則，不會覆蓋。';
 }
 
 function togglePanel(id) {
@@ -495,7 +486,8 @@ var btns = isTrash ?
 '<button class="btn-sm" style="background:var(--gray); margin-left:10px;" onclick="move(', r.id, ',\'kill\')">永久刪除</button>'].join('')) :
 (['<label class="checkbox-group" style="background:transparent; border:none; padding:0;"><input type="checkbox" ', (r.isCompleted?'checked':''), ' onchange="flip(', r.id, ')">',
 '<span class="status-pill ', (r.isCompleted?'pill-done':'pill-wait'), '">', (r.isCompleted?'已完成':'未完成'), '</span></label>',
-'<button type="button" class="btn-sm" style="background:#fff; color:var(--primary); border:1px solid #cbd5e0;" onclick="window.editAmount(', r.id, ')">編輯</button>'].join(''));
+'<button type="button" class="btn-sm" style="background:#fff; color:var(--primary); border:1px solid #cbd5e0;" onclick="window.editTrip(', r.id, ')">完整編輯</button>',
+'<button type="button" class="btn-sm" style="background:#fff; color:#c53030; border:1px solid #fed7d7; margin-left:8px;" onclick="move(', r.id, ',\'trash\')">刪除</button>'].join(''));
 return ['<div class="log-item ', (isTrash?'is-trash':(r.isCompleted?'completed':'pending')), '">',
 '<div style="display:flex; justify-content:space-between; margin-bottom:10px; align-items:flex-start;"><span style="color:#718096; font-size:14px; font-weight:700;">', r.date.substring(5), ' | 🚛 ', r.ton, ' 噸</span>',
 '<span style="font-weight:900; color:var(--primary); font-size:17px;">NT ', r.gross.toLocaleString(), ' 元</span></div>',
@@ -524,460 +516,177 @@ if (act === 'trash') { for(var i=0; i<DB.logs.length; i++) { if(DB.logs[i].id===
 if (act === 'back') { for(var j=0; j<DB.trash.length; j++) { if(DB.trash[j].id===id) { var restored = DB.trash.splice(j,1)[0]; restored.updatedAt = new Date().toISOString(); DB.logs.push(restored); break; } } }
 commit();
 };
-window.editAmount = function(id) {
-    var record = null;
-
-    for (var i = 0; i < DB.logs.length; i++) {
-        if (String(DB.logs[i].id) === String(id)) {
-            record = DB.logs[i];
-            break;
-        }
-    }
-
-    if (!record) {
-        alert("找不到這筆業績資料");
-        return;
-    }
-
-    var currentAmount = Number(record.gross);
-    if (!isFinite(currentAmount) || currentAmount < 0) currentAmount = 0;
-
-    var input = window.prompt(
-        "修改這筆車趟的業績金額\n\n目前金額：NT " +
-        currentAmount.toLocaleString() +
-        " 元\n\n請輸入新的金額：",
-        String(currentAmount)
-    );
-
-    if (input === null) return;
-
-    input = String(input).replace(/,/g, "").trim();
-
-    if (input === "" || !isFinite(Number(input))) {
-        alert("請輸入有效的金額");
-        return;
-    }
-
-    var newAmount = Number(input);
-
-    if (newAmount < 0) {
-        alert("金額不能小於 0");
-        return;
-    }
-
-    record.gross = newAmount;
-    record.totalPrice = newAmount;
-    record.updatedAt = new Date().toISOString();
-
-    if (!commit()) return;
-
-    alert("業績金額已更新為 NT " + newAmount.toLocaleString() + " 元");
+window._editingTripId = null;
+window.closeEditTrip = function(){
+    var m=document.getElementById('editTripModal');
+    if(m){m.style.display='none';m.setAttribute('aria-hidden','true');}
+    window._editingTripId=null;
+};
+window.renderEditDestinations = function(dests) {
+    var box = document.getElementById('edit-dests-container');
+    if(!box) return;
+    box.innerHTML='';
+    dests = Array.isArray(dests) ? dests.filter(function(x){return String(x).trim()!=='';}) : [];
+    if(!dests.length) dests=[''];
+    for(var i=0;i<dests.length;i++) addEditDestinationRow(dests[i], i===0);
 };
 
-function migrationNormalizeRecord(o) {
-    if (!o || typeof o !== 'object') return null;
+window.addEditDestination = function(value) {
+    addEditDestinationRow(value || '', false);
+    var inputs=document.querySelectorAll('#edit-dests-container .edit-dest-input');
+    if(inputs.length) inputs[inputs.length-1].focus();
+};
 
-    var legacyDests = Array.isArray(o.dests)
-        ? o.dests.map(function(v){ return String(v || '').trim(); }).filter(Boolean)
-        : [];
+function addEditDestinationRow(value, isFirst) {
+    var box=document.getElementById('edit-dests-container');
+    if(!box) return;
+    var row=document.createElement('div');
+    row.className='edit-dest-row';
+    row.style.cssText='display:flex;gap:8px;align-items:center;margin-bottom:8px;';
+    var input=document.createElement('input');
+    input.type='text';
+    input.className='edit-dest-input';
+    input.placeholder=isFirst?'目的地':'新增停靠點';
+    input.setAttribute('list','location-options');
+    input.value=value || '';
+    input.oninput=function(){};
+    row.appendChild(input);
+    var btn=document.createElement('button');
+    btn.type='button';
+    btn.textContent=isFirst?'':'🗑';
+    btn.title=isFirst?'主要目的地不可刪除':'刪除此停靠點';
+    btn.disabled=!!isFirst;
+    btn.style.cssText=isFirst?'visibility:hidden;width:44px;height:44px;':'width:44px;height:44px;background:#fff;color:var(--danger);border:1.5px solid #fed7d7;border-radius:10px;cursor:pointer;font-size:16px;';
+    btn.onclick=function(){row.remove();};
+    row.appendChild(btn);
+    box.appendChild(row);
+}
 
-    /* Old JSON's "end" is the original main destination.
-       Do NOT let a generated/derived "to" field replace it. */
-    var destination = String(
-        o.end != null && String(o.end).trim() !== '' ? o.end :
-        (o.to != null && String(o.to).trim() !== '' ? o.to :
-        (o.dest != null && String(o.dest).trim() !== '' ? o.dest :
-        (o.dest1 != null && String(o.dest1).trim() !== '' ? o.dest1 :
-        (legacyDests[0] || ''))))
-        ).trim();
+window.editTrip = function(id) {
+    var record = null;
+    for (var i = 0; i < DB.logs.length; i++) {
+        if (String(DB.logs[i].id) === String(id)) { record = DB.logs[i]; break; }
+    }
+    if (!record) { alert('找不到這筆車趟資料'); return; }
+    window._editingTripId = id;
+    document.getElementById('edit-date').value = record.date || '';
+    document.getElementById('edit-ton').value = String(record.ton || record.truckType || '1.5');
+    document.getElementById('edit-start').value = record.start || record.from || '';
+    var editDests = Array.isArray(record.dests) ? record.dests : (record.to ? [record.to].concat(record.stops || []) : []);
+    renderEditDestinations(editDests);
+    document.getElementById('edit-amount').value = record.gross != null ? record.gross : (record.totalPrice || 0);
+    document.getElementById('edit-distance').value = record.distance != null ? record.distance : 0;
+    document.getElementById('edit-base-price').value = record.basePrice != null ? record.basePrice : 0;
+    document.getElementById('edit-round').checked = !!record.isRoundTrip;
+    document.getElementById('edit-overweight').checked = !!(record.isSlightOverweight || record.isOverWeight);
+    document.getElementById('edit-completed').checked = !!(record.isCompleted || record.completed);
+    var m=document.getElementById('editTripModal');
+    m.style.display='flex';m.setAttribute('aria-hidden','false');
+};
+window.saveEditTrip = function(){
+    var id=window._editingTripId, record=null;
+    for(var i=0;i<DB.logs.length;i++){if(String(DB.logs[i].id)===String(id)){record=DB.logs[i];break;}}
+    if(!record){alert('找不到這筆車趟資料');return;}
+    var date=document.getElementById('edit-date').value;
+    if(!date){alert('請選擇日期');return;}
+    var truck=document.getElementById('edit-ton').value;
+    var from=document.getElementById('edit-start').value.trim();
+    var destInputs=document.querySelectorAll('#edit-dests-container .edit-dest-input');
+    var dests=[];
+    for(var di=0;di<destInputs.length;di++){
+        var dv=destInputs[di].value.trim();
+        if(dv) dests.push(dv);
+    }
+    var amount=Number(document.getElementById('edit-amount').value);
+    var distance=Number(document.getElementById('edit-distance').value);
+    var basePrice=Number(document.getElementById('edit-base-price').value);
+    var newRound=document.getElementById('edit-round').checked;
+    var newOverweight=document.getElementById('edit-overweight').checked;
+    var oldRound=!!record.isRoundTrip;
+    var oldOverweight=!!(record.isSlightOverweight || record.isOverWeight);
+    var oldTon=String(record.ton || record.truckType || '');
+    var oldStart=String(record.start || record.from || '').trim();
+    var oldDests=Array.isArray(record.dests) ? record.dests.map(function(x){return String(x).trim();}).filter(Boolean) : [];
+    var oldDistance=Number(record.distance || 0);
+    var oldBasePrice=Number(record.basePrice || 0);
+    if(!from){alert('起點不能空白');return;}
+    if(!dests.length){alert('至少要有一個目的地');return;}
+    if(!isFinite(amount)||amount<0){alert('請輸入有效的金額');return;}
+    if(!isFinite(distance)||distance<0){alert('里程必須是 0 以上的數字');return;}
+    if(!isFinite(basePrice)||basePrice<0){alert('路線底價必須是 0 以上的數字');return;}
 
-    var stops = Array.isArray(o.stops)
-        ? o.stops.map(function(v){ return String(v || '').trim(); }).filter(Boolean)
-        : legacyDests.slice(1);
+    // 計價條件有變時，依「最遠端主要底價 + 額外停靠點」重新計算。
+    // 歷史資料若只改日期、完成狀態或純金額，則保留使用者輸入的金額。
+    var pricingChanged =
+        oldRound !== newRound ||
+        oldOverweight !== newOverweight ||
+        oldTon !== String(truck) ||
+        oldStart !== from ||
+        oldDests.join('|') !== dests.join('|') ||
+        oldDistance !== distance ||
+        oldBasePrice !== basePrice;
 
-    var ton = String(o.truckType || o.ton || o.vehicle || '1.5');
-    if (ton === '三噸半') ton = '3.5';
-    else if (ton === '發財車') ton = '0.7';
-    if (ton !== '1.5' && ton !== '3.5' && ton !== '0.7') ton = '1.5';
-
-    /*
-     * IMPORTANT:
-     * In the old export, the real historical fare is in "total".
-     * Many records also contain totalPrice: 0 and gross: 0.
-     * Therefore, choose the first POSITIVE amount in:
-     * total -> totalPrice -> gross.
-     * If every value is zero, keep zero.
-     */
-    var candidates = [o.total, o.totalPrice, o.gross];
-    var total = 0;
-    for (var i = 0; i < candidates.length; i++) {
-        var n = Number(candidates[i]);
-        if (isFinite(n) && n > 0) {
-            total = n;
-            break;
+    var calculatedAmount = amount;
+    var calculatedBase = basePrice;
+    var calculatedDistance = distance;
+    if (pricingChanged) {
+        var calc = calculateTripAmount(from, dests, truck, newRound, newOverweight, distance);
+        if (calc.base > 0) {
+            calculatedAmount = calc.amount;
+            calculatedBase = calc.base;
+            calculatedDistance = calc.distance || distance;
         }
     }
 
-    var id = o.id != null ? o.id : (o.createdAt || (Date.now() + Math.random()));
-    var completed = o.isCompleted !== undefined
-        ? o.isCompleted
-        : (o.isDone !== undefined ? o.isDone : o.completed);
+    record.date=date;
+    record.ton=truck;record.truckType=truck;
+    record.start=from;record.from=from;
+    record.dests=dests;record.to=dests[0];record.stops=dests.slice(1);
+    record.gross=calculatedAmount;record.totalPrice=calculatedAmount;
+    record.distance=calculatedDistance;record.basePrice=calculatedBase;
+    record.isRoundTrip=newRound;
+    record.isSlightOverweight=newOverweight;
+    record.isOverWeight=record.isSlightOverweight;
+    record.isCompleted=document.getElementById('edit-completed').checked;
+    record.completed=record.isCompleted;
+    record.updatedAt=new Date().toISOString();
+    if(!commit())return;
+    window.closeEditTrip();
+    if (pricingChanged && calculatedAmount !== amount) {
+        alert('這筆車趟已更新。\n因為計價條件有變，業績金額已自動重算為 NT ' + calculatedAmount.toLocaleString() + ' 元。');
+    } else {
+        alert('這筆車趟已完整更新。');
+    }
+};
 
-    var overweight = o.isSlightOverweight !== undefined
-        ? o.isSlightOverweight
-        : o.isOverWeight;
-
-    var distance = Number(o.distance);
-    if (!isFinite(distance) || distance <= 0) distance = Number(o.manualKm);
-    if (!isFinite(distance) || distance < 0) distance = 0;
-
-    return normalizeTrip({
-        id: id,
-        date: o.date || '',
-        ton: ton,
-        truckType: ton,
-        start: o.start || o.from || '',
-        from: o.from || o.start || '',
-        end: destination,
-        to: destination,
-        dests: destination ? [destination].concat(stops) : stops,
-        stops: stops,
-        gross: total,
-        total: total,
-        totalPrice: total,
-        isCompleted: completed,
-        isDone: o.isDone,
-        completed: completed,
-        isRoundTrip: o.isRoundTrip,
-        isSlightOverweight: overweight,
-        isOverWeight: overweight,
-        distance: distance,
-        manualKm: distance,
-        basePrice: Number(o.basePrice) || 0,
-        calcMode: o.calcMode || o.calculationMode || ''
-    });
-}
-
-function readMigrationArray(data, key) {
+function importJsonFile(event) {
+var file=event.target.files && event.target.files[0];
+if(!file)return;
+var reader=new FileReader();
+reader.onload=function(){
     try {
-        var raw = data && data[key];
-        if (raw === undefined || raw === null) return [];
-        if (typeof raw === 'string') raw = JSON.parse(raw);
-        return Array.isArray(raw) ? raw : [];
-    } catch(e) { return []; }
-}
-
-function migrateSettings(data) {
-    var kmRaw = data && data.logistic_kms;
-    var priceRaw = data && data.logistic_prices;
-    try { if (typeof kmRaw === 'string') kmRaw = JSON.parse(kmRaw); } catch(e) { kmRaw = null; }
-    try { if (typeof priceRaw === 'string') priceRaw = JSON.parse(priceRaw); } catch(e) { priceRaw = null; }
-    if (Array.isArray(kmRaw)) {
-        kmRaw.forEach(function(r){
-            if (!r || !r.start || !r.end) return;
-            var v = Number(r.km);
-            if (isFinite(v) && v > 0) DB.km[r.start + '-' + r.end] = v;
+        var parsed=JSON.parse(reader.result);
+        var incoming=Array.isArray(parsed) ? parsed : (Array.isArray(parsed.data) ? parsed.data : (Array.isArray(parsed.logs) ? parsed.logs : []));
+        if(!incoming.length) throw new Error('找不到車趟資料');
+        var normalized=incoming.map(normalizeTrip);
+        var existing={}; DB.logs.forEach(function(r){existing[String(r.id)]=true;});
+        var added=0, skipped=0;
+        normalized.forEach(function(r){
+            if(existing[String(r.id)]) { skipped++; return; }
+            DB.logs.push(r); existing[String(r.id)]=true; added++;
         });
-    } else if (kmRaw && typeof kmRaw === 'object') {
-        Object.keys(kmRaw).forEach(function(k){ var v=Number(kmRaw[k]); if(isFinite(v)&&v>0) DB.km[k]=v; });
-    }
-    if (Array.isArray(priceRaw)) {
-        priceRaw.forEach(function(r){
-            if (!r || !r.start || !r.end || !r.ton) return;
-            var p = Number(r.price);
-            if (!isFinite(p) || p < 0) return;
-            var k = r.start + '-' + r.end;
-            if (!DB.price[k]) DB.price[k] = {};
-            DB.price[k][r.ton] = p;
-        });
-    } else if (priceRaw && typeof priceRaw === 'object') {
-        Object.keys(priceRaw).forEach(function(k){
-            if (!DB.price[k] || typeof DB.price[k] !== 'object') DB.price[k] = {};
-            Object.keys(priceRaw[k] || {}).forEach(function(t){ DB.price[k][t] = Number(priceRaw[k][t]); });
-        });
-    }
-}
-
-
-function exportRawStorageNoCommit() {
-    try {
-        var keys = [
-            'logistic_kms',
-            'logistic_prices',
-            'logistic_logs',
-            'logistic_trash',
-            'carLogs',
-            'logistic_storage_version',
-            'logistic_storage_backup',
-            'is_rescued'
-        ];
-
-        var data = {};
-        var summary = {};
-
-        keys.forEach(function(key) {
-            var raw = localStorage.getItem(key);
-            data[key] = raw;
-
-            if (key === 'logistic_logs' || key === 'logistic_trash' || key === 'carLogs') {
-                try {
-                    var arr = raw ? JSON.parse(raw) : [];
-                    summary[key] = Array.isArray(arr) ? arr.length : 0;
-                } catch (e) {
-                    summary[key] = '格式異常';
-                }
-            } else if (key === 'logistic_kms' || key === 'logistic_prices') {
-                try {
-                    var obj = raw ? JSON.parse(raw) : {};
-                    summary[key] = obj && typeof obj === 'object' ? Object.keys(obj).length : 0;
-                } catch (e) {
-                    summary[key] = '格式異常';
-                }
-            } else {
-                summary[key] = raw === null ? '無' : '有';
-            }
-        });
-
-        var backup = {
-            format: 'logistic-trip-raw-storage-safe-v1',
-            exportedAt: new Date().toISOString(),
-            source: '車趟記錄2.html（安全原始匯出，不執行 commit）',
-            summary: summary,
-            data: data
-        };
-
-        var blob = new Blob([JSON.stringify(backup, null, 2)], {
-            type: 'application/json;charset=utf-8'
-        });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = '物流車趟安全原始資料備份.json';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
-
-        alert(
-            '已安全匯出，這次沒有執行任何儲存或覆寫。\\n\\n' +
-            'logistic_logs：' + summary.logistic_logs + '\\n' +
-            'logistic_kms：' + summary.logistic_kms + '\\n' +
-            'logistic_prices：' + summary.logistic_prices + '\\n' +
-            'carLogs：' + summary.carLogs + '\\n' +
-            'logistic_trash：' + summary.logistic_trash
-        );
-    } catch (e) {
-        alert('安全匯出失敗：' + e.message);
-    }
-}
-
-function exportMigrationBackup() {
-    try {
-        commit();
-        var backup = {
-            format: 'logistic-trip-migration-v1',
-            exportedAt: new Date().toISOString(),
-            source: '物流業績管理系統正式版',
-            data: {
-                logistic_logs: localStorage.getItem('logistic_logs') || '[]',
-                logistic_trash: localStorage.getItem('logistic_trash') || '[]',
-                logistic_kms: localStorage.getItem('logistic_kms') || '{}',
-                logistic_prices: localStorage.getItem('logistic_prices') || '{}',
-                carLogs: localStorage.getItem('carLogs') || '[]'
-            }
-        };
-        var blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json;charset=utf-8'});
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = '物流車趟資料備份.json';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
-    } catch(e) { alert('備份匯出失敗：' + e.message); }
-}
-
-
-/*
- * Rebuild the route/price database from historical trip records when the
- * legacy JSON contains empty logistic_kms / logistic_prices.
- *
- * This does NOT change historical trip amounts. It only reconstructs rules
- * for future calculations from routes that already have an observed fare.
- */
-function rebuildPricingFromHistoricalLogs(records) {
-    var priceAdded = 0;
-    var kmAdded = 0;
-
-    (records || []).forEach(function(r) {
-        if (!r || !r.from || !r.to) return;
-
-        var total = Number(r.totalPrice);
-        if (!isFinite(total) || total <= 0) total = Number(r.gross);
-        if (!isFinite(total) || total <= 0) return;
-
-        var ton = String(r.truckType || r.ton || '1.5');
-        if (ton !== '1.5' && ton !== '3.5' && ton !== '0.7') return;
-
-        var key = r.from + '-' + r.to;
-        var stopsCount = Array.isArray(r.stops) ? r.stops.filter(Boolean).length : 0;
-        var extra = stopsCount * 200;
-        if (r.isOverWeight || r.isSlightOverweight) extra += 300;
-
-        /*
-         * If this was a mileage trip, preserve the observed manual km.
-         * The current calculator can then use the normal mileage formula.
-         */
-        var km = Number(r.distance);
-        if (isFinite(km) && km > 0 && String(r.calcMode || '').indexOf('里程') >= 0) {
-            if (!DB.km[key]) {
-                DB.km[key] = km;
-                kmAdded++;
-            }
+        if(!added){ alert('匯入完成，但全部 '+skipped+' 筆都已存在，沒有新增資料。'); }
+        else {
+            if(!commit()) throw new Error('資料儲存失敗');
+            updateUI();
+            alert('舊版資料匯入完成！\n新增：'+added+' 筆\n重複略過：'+skipped+' 筆\n目前總車趟：'+DB.logs.length+' 筆');
         }
-
-        /*
-         * For fixed/base historical fares, reverse the known adjustments:
-         * round-trip +50%, extra stop +200 each, slight overweight +300.
-         * The resulting base is rounded to the system's 100-dollar unit.
-         */
-        var mode = String(r.calcMode || '');
-        if (mode.indexOf('固定底價') >= 0 || mode.indexOf('基礎計費') >= 0) {
-            var base = total - extra;
-            if (r.isRoundTrip) base = base / 1.5;
-            base = Math.round(base / 100) * 100;
-
-            if (base > 0) {
-                if (!DB.price[key]) DB.price[key] = {};
-                if (!DB.price[key][ton]) {
-                    DB.price[key][ton] = base;
-                    priceAdded++;
-                }
-            }
-        }
-    });
-
-    return { priceAdded: priceAdded, kmAdded: kmAdded };
-}
-
-function importMigrationBackup(input) {
-    var file = input && input.files ? input.files[0] : null;
-    if (!file) return;
-
-    var reader = new FileReader();
-    reader.onload = function() {
-        try {
-            var backup = JSON.parse(reader.result);
-            var data = backup && backup.data ? backup.data : backup;
-            if (!data || typeof data !== 'object') throw new Error('檔案格式不正確');
-
-            /*
-             * IMPORTANT:
-             * If logistic_logs exists, it is the authoritative historical
-             * collection. Do NOT concatenate carLogs, because that would
-             * duplicate the 201 records with the 67 legacy records.
-             */
-            var imported = readMigrationArray(data, 'logistic_logs');
-            if (!imported.length) imported = readMigrationArray(data, 'carLogs');
-
-            var trashImported = readMigrationArray(data, 'logistic_trash');
-
-            if (!imported.length && !trashImported.length) {
-                throw new Error('找不到可匯入的車趟資料');
-            }
-
-            if (!confirm(
-                '即將匯入 ' + imported.length + ' 筆車趟資料。\\n\\n' +
-                '本次會：\\n' +
-                '✓ 保留舊資料原本的 total 運費\\n' +
-                '✓ 保留起點、主要終點、停靠點\\n' +
-                '✓ 不會把 totalPrice=0 覆蓋成 0 元\\n' +
-                '✓ 不會把 logistic_logs 與 carLogs 重複合併\\n' +
-                '✓ 若舊價格/里程資料庫為空，會從歷史車趟重建可推導的規則\\n\\n' +
-                '確定繼續嗎？'
-            )) return;
-
-            var existingIds = {};
-            var existingSignatures = {};
-
-            DB.logs.forEach(function(r) {
-                existingIds[String(r.id)] = true;
-                existingSignatures[
-                    String(r.date) + '|' +
-                    String(r.ton) + '|' +
-                    String(r.start) + '|' +
-                    String(r.dests && r.dests.join('>')) + '|' +
-                    String(r.gross)
-                ] = true;
-            });
-
-            var added = 0;
-            var preservedAmount = 0;
-            var converted = [];
-
-            imported.forEach(function(o) {
-                var r = migrationNormalizeRecord(o);
-                if (!r || !r.date || !r.from || !r.to) return;
-
-                var sig =
-                    String(r.date) + '|' +
-                    String(r.ton) + '|' +
-                    String(r.start) + '|' +
-                    String(r.dests && r.dests.join('>')) + '|' +
-                    String(r.gross);
-
-                if (existingIds[String(r.id)] || existingSignatures[sig]) return;
-
-                existingIds[String(r.id)] = true;
-                existingSignatures[sig] = true;
-                DB.logs.push(r);
-                converted.push(r);
-                preservedAmount += Number(r.gross) || 0;
-                added++;
-            });
-
-            var trashAdded = 0;
-            var trashIds = {};
-            DB.trash.forEach(function(r) { trashIds[String(r.id)] = true; });
-
-            trashImported.forEach(function(o) {
-                var r = migrationNormalizeRecord(o);
-                if (!r || !r.date || trashIds[String(r.id)]) return;
-                DB.trash.push(r);
-                trashIds[String(r.id)] = true;
-                trashAdded++;
-            });
-
-            /* Import any real settings if the backup actually contains them. */
-            migrateSettings(data);
-
-            /*
-             * If the legacy export had empty setting databases, reconstruct
-             * only what can be safely inferred from the historical records.
-             */
-            var rebuilt = rebuildPricingFromHistoricalLogs(converted);
-
-            if (!commit()) return;
-
-            input.value = '';
-
-            alert(
-                '舊資料完整匯入完成！\\n\\n' +
-                '新增車趟：' + added + ' 筆\\n' +
-                '保留原始運費：NT ' + preservedAmount.toLocaleString() + ' 元\\n' +
-                '回收桶資料：' + trashAdded + ' 筆\\n' +
-                '重建固定底價規則：' + rebuilt.priceAdded + ' 筆\\n' +
-                '重建里程規則：' + rebuilt.kmAdded + ' 筆\\n\\n' +
-                '原本資料沒有被清空。'
-            );
-        } catch(e) {
-            input.value = '';
-            alert('匯入失敗：' + e.message);
-        }
-    };
-
-    reader.readAsText(file, 'utf-8');
+    } catch(e) {
+        alert('JSON 匯入失敗：'+(e.message || e));
+    }
+    event.target.value='';
+};
+reader.readAsText(file,'utf-8');
 }
 
 function exportExcel() {
@@ -1009,7 +718,95 @@ c++;
 localStorage.setItem('is_rescued', 'true'); find('rescue-btn-container').style.display = 'none';
 if (c > 0) { commit(); alert("成功救回 " + c + " 筆歷史紀錄！"); } else { alert("資料同步完成。"); }
 }
+function rebuildPricingFromHistoricalLogs(showAlert) {
+var legacy = getStoredData('carLogs', []);
+var legacyById = {};
+legacy.forEach(function(o){ if (o && o.id != null) legacyById[String(o.id)] = o; });
+var candidates = {};
+var conflicts = [];
+var added = 0;
+var kmAdded = 0;
+
+function calcBase(r, total, stopCount) {
+    var base = Number(total) || 0;
+    if (r.isRoundTrip) {
+        var found = 0;
+        for (var b=0; b<=base; b++) { if (Math.round(b*1.5) === base) found = b; }
+        base = found > 0 ? found : base/1.5;
+    }
+    if (r.isOverWeight || r.isSlightOverweight) base -= 300;
+    base -= Math.max(0, stopCount) * 200;
+    return Math.round(base/100)*100;
+}
+
+DB.logs.forEach(function(r){
+    if (!r || !r.start || !r.ton) return;
+    var start = String(r.start).trim();
+    var end = String(r.end || r.to || '').trim();
+    var dests = [];
+    var systemRestore = end.indexOf('系統還原(') === 0;
+    if (systemRestore) {
+        var old = legacyById[String(r.id)];
+        if (old && Array.isArray(old.dests)) dests = old.dests.map(function(x){return String(x||'').trim();}).filter(Boolean);
+    } else if (end && end.indexOf('/') < 0) {
+        var stops0 = Array.isArray(r.stops) ? r.stops.map(function(x){return String(x||'').trim();}).filter(Boolean) : [];
+        if (stops0.length === 0) dests = [end];
+    }
+    if (dests.length !== 1 || start === dests[0]) return;
+    var total = Number(r.totalPrice || r.total || r.gross || 0);
+    if (!isFinite(total) || total <= 0) return;
+    var ton = String(r.ton || r.truckType || '');
+    if (ton !== '1.5' && ton !== '3.5' && ton !== '0.7') return;
+    var key = start + '-' + dests[0];
+    var base = calcBase(r,total,0);
+    if (base <= 0) return;
+    var mode = String(r.calcMode || '');
+    var isFixed = mode.indexOf('固定底價') >= 0;
+    var date = String(r.date || '');
+    var k = key + '|' + ton;
+    if (!candidates[k]) candidates[k] = {start:start,end:dests[0],ton:ton,values:[],fixed:false,latest:date};
+    candidates[k].values.push({base:base,date:date,fixed:isFixed});
+    if (isFixed) candidates[k].fixed = true;
+    if (date > candidates[k].latest) candidates[k].latest = date;
+
+    var distance = Number(r.distance || r.manualKm || 0);
+    if (distance > 0 && mode.indexOf('里程') >= 0 && !DB.km[key]) {
+        DB.km[key] = distance;
+        kmAdded++;
+    }
+});
+
+Object.keys(candidates).forEach(function(k){
+    var c = candidates[k];
+    var counts = {};
+    c.values.forEach(function(v){ counts[v.base] = (counts[v.base] || 0) + 1; });
+    var bestBase = 0, bestCount = 0;
+    Object.keys(counts).forEach(function(b){ if (counts[b] > bestCount) { bestBase = Number(b); bestCount = counts[b]; } });
+    var stable = bestCount >= 2 && bestCount === c.values.length && c.latest >= '2026-04-01';
+    var shouldAdd = c.fixed || stable;
+    if (!shouldAdd) return;
+    if (!DB.price[c.start+'-'+c.end]) DB.price[c.start+'-'+c.end] = {};
+    var old = DB.price[c.start+'-'+c.end][c.ton];
+    if (old == null || Number(old) <= 0) {
+        DB.price[c.start+'-'+c.end][c.ton] = bestBase;
+        added++;
+    } else if (Number(old) !== bestBase) {
+        conflicts.push(c.start+' ➡ '+c.end+' ('+c.ton+'噸)：現有 '+Number(old).toLocaleString()+' / 歷史推導 '+bestBase.toLocaleString());
+    }
+});
+
+if (added > 0 || kmAdded > 0) commit();
+if (showAlert) {
+    var msg = '計價規則修復完成。\n\n新增固定/穩定底價：'+added+' 筆\n新增里程規則：'+kmAdded+' 筆';
+    if (conflicts.length) msg += '\n\n⚠️ 有既有規則與歷史推導不同，已保留既有規則，沒有覆蓋：\n'+conflicts.slice(0,12).join('\n');
+    msg += '\n\n歷史車趟與原本資料沒有刪除。';
+    alert(msg);
+}
+return {priceAdded:added,kmAdded:kmAdded,conflicts:conflicts};
+}
+
 migrateStorage();
+try { if (localStorage.getItem('pricing_rebuild_v1_done') !== 'true') { rebuildPricingFromHistoricalLogs(false); localStorage.setItem('pricing_rebuild_v1_done', 'true'); } } catch(e) { console.warn('pricing rebuild skipped', e); }
 updateUI();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1036,5 +833,33 @@ window.location.reload();
 });
 }
 </script>
+
+<div id="editTripModal" class="edit-modal-backdrop" aria-hidden="true">
+  <div class="edit-modal" role="dialog" aria-modal="true" aria-labelledby="editTripTitle">
+    <h3 id="editTripTitle">✏️ 編輯車趟</h3>
+    <div class="edit-grid">
+      <div><label for="edit-date">日期</label><input type="date" id="edit-date"></div>
+      <div><label for="edit-ton">車型</label><select id="edit-ton"><option value="1.5">1.5 噸</option><option value="3.5">3.5 噸</option><option value="0.7">0.7 噸</option></select></div>
+      <div class="edit-full"><label for="edit-start">起點</label><input type="text" id="edit-start" list="location-options"></div>
+      <div class="edit-full">
+        <label>目的地／停靠點</label>
+        <div id="edit-dests-container"></div>
+        <button type="button" class="btn-outline" style="margin-top:4px;" onclick="window.addEditDestination('')">＋ 新增停靠點</button>
+      </div>
+      <div><label for="edit-amount">業績金額（元）</label><input type="number" id="edit-amount" min="0" step="1" inputmode="numeric"></div>
+      <div><label for="edit-distance">里程（km）</label><input type="number" id="edit-distance" min="0" step="0.1" inputmode="decimal"></div>
+      <div><label for="edit-base-price">路線底價（元）</label><input type="number" id="edit-base-price" min="0" step="1" inputmode="numeric"></div>
+      <div class="edit-full">
+        <label><input type="checkbox" id="edit-round" style="width:auto;margin-right:8px;">來回（+50%）</label>
+        <label><input type="checkbox" id="edit-overweight" style="width:auto;margin-right:8px;">小超重（+300）</label>
+        <label><input type="checkbox" id="edit-completed" style="width:auto;margin-right:8px;">已完成</label>
+      </div>
+    </div>
+    <div class="edit-actions">
+      <button type="button" class="btn-outline" onclick="window.closeEditTrip()">取消</button>
+      <button type="button" class="btn btn-save" onclick="window.saveEditTrip()">儲存修改</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
