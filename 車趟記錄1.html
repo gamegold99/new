@@ -10,7 +10,6 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>物流業績旗艦版</title>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
 --primary: #2c3e50; --accent: #e67e22; --bg: #f8fafb;
@@ -1092,19 +1091,136 @@ function importMigrationBackup(input) {
 }
 
 function exportExcel() {
-if (DB.logs.length === 0) { alert("目前尚無資料可供匯出"); return; }
-var wb = XLSX.utils.book_new(); var grps = {};
-DB.logs.forEach(function(r) { var m = r.date.substring(0,7); if(!grps[m]) grps[m]=[]; grps[m].push(r); });
-Object.keys(grps).sort().reverse().forEach(function(m) {
-var data = [["日期","狀態","車型","起點","目的地明細","行程標籤","原價金額"]]; var s = 0, completedS = 0;
-grps[m].forEach(function(r) {
-var tag = (r.isRoundTrip ? "來回" : "單趟") + (r.isSlightOverweight ? " +小超重" : "");
-data.push([r.date, (r.isCompleted?"已完成":"未完成"), r.ton+"噸", r.start, r.dests.join(' / '), tag, r.gross]); s += r.gross; if (r.isCompleted) completedS += r.gross;
-});
-data.push([],["","","","","月營收原價總計：", s],["","","","","當月實領金額(扣7%)：", Math.round(completedS*0.93)]);
-XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), m);
-});
-XLSX.writeFile(wb, "物流業績對帳單.xlsx");
+    if (!DB.logs || DB.logs.length === 0) {
+        alert("目前尚無資料可供匯出");
+        return;
+    }
+
+    /*
+     * OFFLINE FIX:
+     * The previous version depended on the external XLSX CDN.
+     * When the phone is offline, XLSX may not exist and the button appears
+     * to do nothing. Use Excel's native SpreadsheetML 2003 format instead.
+     * It needs no external library and works offline.
+     */
+    function esc(v) {
+        return String(v == null ? '' : v)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function cell(v, type) {
+        var t = type || (typeof v === 'number' && isFinite(v) ? 'Number' : 'String');
+        return '<Cell><Data ss:Type="' + t + '">' + esc(v) + '</Data></Cell>';
+    }
+
+    var groups = {};
+    DB.logs.forEach(function(r) {
+        if (!r || !r.date) return;
+        var m = String(r.date).substring(0, 7);
+        if (!groups[m]) groups[m] = [];
+        groups[m].push(r);
+    });
+
+    var months = Object.keys(groups).sort().reverse();
+
+    var xml =
+        '<?xml version="1.0"?>' +
+        '<?mso-application progid="Excel.Sheet"?>' +
+        '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" ' +
+        'xmlns:o="urn:schemas-microsoft-com:office:office" ' +
+        'xmlns:x="urn:schemas-microsoft-com:office:excel" ' +
+        'xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">' +
+        '<Styles>' +
+        '<Style ss:ID="Header"><Font ss:Bold="1"/></Style>' +
+        '<Style ss:ID="Money"><NumberFormat ss:Format="#,##0"/></Style>' +
+        '</Styles>';
+
+    months.forEach(function(m) {
+        var rows = groups[m].slice().sort(function(a, b) {
+            return new Date(a.date) - new Date(b.date);
+        });
+
+        var sheetName = m.replace(/[:\\\/\?\*\[\]]/g, '-').substring(0, 31);
+        var total = 0;
+        var completedTotal = 0;
+
+        xml += '<Worksheet ss:Name="' + esc(sheetName) + '"><Table>';
+
+        xml += '<Row ss:StyleID="Header">' +
+            cell('日期') +
+            cell('狀態') +
+            cell('車型') +
+            cell('起點') +
+            cell('目的地明細') +
+            cell('行程標籤') +
+            cell('原價金額') +
+            '</Row>';
+
+        rows.forEach(function(r) {
+            var amount = Number(r.gross) || 0;
+            var tag = (r.isRoundTrip ? '來回' : '單趟') +
+                (r.isSlightOverweight ? ' +小超重' : '');
+            var status = r.isCompleted ? '已完成' : '未完成';
+            var dests = Array.isArray(r.dests) ? r.dests.join(' / ') : (r.end || '');
+
+            xml += '<Row>' +
+                cell(r.date) +
+                cell(status) +
+                cell((r.ton || '') + '噸') +
+                cell(r.start || '') +
+                cell(dests) +
+                cell(tag) +
+                '<Cell ss:StyleID="Money"><Data ss:Type="Number">' + amount + '</Data></Cell>' +
+                '</Row>';
+
+            total += amount;
+            if (r.isCompleted) completedTotal += amount;
+        });
+
+        xml += '<Row></Row>';
+        xml += '<Row>' + cell('') + cell('') + cell('') + cell('') +
+            cell('月營收原價總計：') +
+            '<Cell ss:StyleID="Money"><Data ss:Type="Number">' + total + '</Data></Cell>' +
+            '</Row>';
+        xml += '<Row>' + cell('') + cell('') + cell('') + cell('') +
+            cell('當月實領金額(扣7%)：') +
+            '<Cell ss:StyleID="Money"><Data ss:Type="Number">' + Math.round(completedTotal * 0.93) + '</Data></Cell>' +
+            '</Row>';
+
+        xml += '</Table></Worksheet>';
+    });
+
+    xml += '</Workbook>';
+
+    try {
+        var blob = new Blob(
+            ['\ufeff' + xml],
+            {type: 'application/vnd.ms-excel;charset=utf-8'}
+        );
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = '物流業績對帳單.xls';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        setTimeout(function() {
+            URL.revokeObjectURL(url);
+        }, 1500);
+
+        alert(
+            'Excel 報表已匯出！\n\n' +
+            '共 ' + months.length + ' 個月份工作表。\n' +
+            '共 ' + DB.logs.length + ' 筆車趟。\n\n' +
+            '這個版本不需要網路，也不依賴外部 XLSX 程式庫。'
+        );
+    } catch (e) {
+        alert('Excel 匯出失敗：' + e.message);
+    }
 }
 
 function rescueOldData() {
