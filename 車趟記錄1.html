@@ -67,6 +67,37 @@ datalist { display: none; }
 /* Legacy trash cards still contain this control in old markup; deletion is disabled. */
 button[onclick*="'kill'"] { display: none; }
 </style>
+
+<style id="ui-optimization-v1">
+/* 手機正式版介面微調：只改善版面，不改資料結構 */
+#priceListArea .card,
+#priceListArea .log-item {
+  padding: 12px 14px !important;
+  margin-bottom: 8px !important;
+}
+#priceListArea button {
+  padding: 7px 12px !important;
+  font-size: 14px !important;
+}
+#priceListArea {
+  max-height: 360px !important;
+}
+#historyManagement {
+  padding-top: 0 !important;
+}
+#historyManagement .bar {
+  margin-top: 0 !important;
+}
+@media (max-width: 600px) {
+  .result-display {
+    padding: 16px !important;
+  }
+  .result-display .net-total {
+    font-size: 2.15rem !important;
+  }
+}
+</style>
+
 </head>
 <body>
 
@@ -107,7 +138,7 @@ button[onclick*="'kill'"] { display: none; }
 <span class="net-total">NT <span id="est-gross">0</span> 元</span>
 </div>
 </div>
-<button class="btn btn-save" onclick="saveData()">確認儲存車趟紀錄</button>
+<button class="btn btn-save" onclick="saveData()">💾 儲存車趟</button>
 </div>
 
 <datalist id="location-options"></datalist>
@@ -190,12 +221,20 @@ button[onclick*="'kill'"] { display: none; }
 
 <datalist id="location-options"></datalist>
 
-<h3 style="color:var(--primary); border-bottom:3px solid #edf2f7; padding-bottom:10px; margin-top:30px; font-weight:800;">📅 歷史車趟與業績統計</h3>
+<div class="bar" onclick="togglePanel('historyManagement')">
+  <span>📅 歷史車趟與業績統計</span><span>▼</span>
+</div>
+
+<div id="historyManagement" class="panel" style="margin-top:-2px; display:none;">
+
 <div id="logContainer"></div>
 
 <div id="rescue-btn-container" style="display:none; text-align:center; margin-top:40px;">
 <button class="btn" style="background:#edf2f7; color:var(--danger); font-size:15px; width:auto; padding:12px 30px; border-radius:30px; border:1.5px solid #fed7d7;" onclick="rescueOldData()">🚑 偵測到舊版資料，點此救回</button>
 </div>
+</div>
+
+
 </div>
 
 <script>
@@ -422,6 +461,9 @@ if (f === 0 || s === "" || d === "") { alert("路線資料不完整"); return; }
 var pts = [d]; var ins = document.querySelectorAll('.extra-dest-input');
 for (var i=0; i<ins.length; i++) { if (ins[i].value.trim() !== "") pts.push(ins[i].value.trim()); }
 DB.logs.push({ id: new Date().getTime(), date: find('date').value, ton: find('ton').value, start: s, dests: pts, gross: f, isRoundTrip: find('isRoundTrip').checked, isSlightOverweight: find('isSlightOverweight').checked, isCompleted: false });
+var confirmRoute = (find('start').value || '') + ' → ' + (find('dest1').value || '');
+var confirmAmount = Number(find('est-gross').textContent || 0).toLocaleString('zh-TW');
+if (!confirm('確定儲存這筆車趟？\n\n' + confirmRoute + '\n' + (find('ton').value || '') + ' 噸\nNT$ ' + confirmAmount)) return;
 if (!commit()) return;
 find('start').value = find('dest1').value = find('manual-km').value = find('extra-dests-container').innerHTML = "";
 find('isRoundTrip').checked = find('isSlightOverweight').checked = false; calculateLive();
