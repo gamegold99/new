@@ -123,7 +123,7 @@ button[onclick*="'kill'"] { display: none; }
   </div>
 
   <div id="pricingManagement" class="panel" style="margin-top:-2px; margin-bottom:12px;">
-<div id="priceSettingsContainer" class="panel">
+<div id="priceSettingsContainer" style="display:block;">
 <div class="card" style="padding:15px; margin-bottom:15px; box-shadow:none; border:1px solid #edf2f7;">
 <label>1. 設定行政區里程 (km)</label>
 <div class="flex-row"><input type="text" id="km-start" placeholder="起點" list="location-options"><span class="arrow-text">➡</span><input type="text" id="km-dest" placeholder="終點" list="location-options"></div>
@@ -343,7 +343,7 @@ function updateUI() {
 find('trash-count').innerText = DB.trash.length;
 renderHistory();
 if (find('trashContainer') && find('trashContainer').style.display === 'block') renderTrash();
-if (find('priceSettingsContainer') && find('priceSettingsContainer').style.display === 'block') renderSettings();
+if (find('priceSettingsContainer')) renderSettings();
 /*
  * 地點清單不能只依賴價格/里程規則。
  * 舊車趟本身就保存了起點、終點與停靠點，因此匯入舊資料後，
