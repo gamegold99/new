@@ -457,15 +457,40 @@ find('est-gross').innerText = f.toLocaleString(); return f;
 function saveData() {
 var f = calculateLive(), s = find('start').value.trim(), d = find('dest1').value.trim();
 if (f === 0 || s === "" || d === "") { alert("路線資料不完整"); return; }
-var pts = [d]; var ins = document.querySelectorAll('.extra-dest-input');
-for (var i=0; i<ins.length; i++) { if (ins[i].value.trim() !== "") pts.push(ins[i].value.trim()); }
-DB.logs.push({ id: new Date().getTime(), date: find('date').value, ton: find('ton').value, start: s, dests: pts, gross: f, isRoundTrip: find('isRoundTrip').checked, isSlightOverweight: find('isSlightOverweight').checked, isCompleted: false });
-var confirmRoute = (find('start').value || '') + ' → ' + (find('dest1').value || '');
-var confirmAmount = Number(find('est-gross').textContent || 0).toLocaleString('zh-TW');
-if (!confirm('確定儲存這筆車趟？\n\n' + confirmRoute + '\n' + (find('ton').value || '') + ' 噸\nNT$ ' + confirmAmount)) return;
+
+var pts = [d];
+var ins = document.querySelectorAll('.extra-dest-input');
+for (var i=0; i<ins.length; i++) {
+  if (ins[i].value.trim() !== "") pts.push(ins[i].value.trim());
+}
+
+var confirmRoute = s + ' → ' + pts.join(' → ');
+var confirmAmount = Number(f).toLocaleString('zh-TW');
+
+if (!confirm(
+  '確定儲存這筆車趟？\n\n' +
+  confirmRoute + '\n' +
+  (find('ton').value || '') + ' 噸\n' +
+  'NT$ ' + confirmAmount
+)) return;
+
+DB.logs.push({
+  id: new Date().getTime(),
+  date: find('date').value,
+  ton: find('ton').value,
+  start: s,
+  dests: pts,
+  gross: f,
+  isRoundTrip: find('isRoundTrip').checked,
+  isSlightOverweight: find('isSlightOverweight').checked,
+  isCompleted: false
+});
+
 if (!commit()) return;
+
 find('start').value = find('dest1').value = find('manual-km').value = find('extra-dests-container').innerHTML = "";
-find('isRoundTrip').checked = find('isSlightOverweight').checked = false; calculateLive();
+find('isRoundTrip').checked = find('isSlightOverweight').checked = false;
+calculateLive();
 }
 
 function addSetting(m) {
@@ -605,7 +630,10 @@ var btns = isTrash ?
 '<button class="btn-sm" style="background:var(--gray); margin-left:10px;" onclick="move(', r.id, ',\'kill\')">永久刪除</button>'].join('')) :
 (['<label class="checkbox-group" style="background:transparent; border:none; padding:0;"><input type="checkbox" ', (r.isCompleted?'checked':''), ' onchange="flip(', r.id, ')">',
 '<span class="status-pill ', (r.isCompleted?'pill-done':'pill-wait'), '">', (r.isCompleted?'已完成':'未完成'), '</span></label>',
-'<button type="button" class="btn-sm" style="background:#fff; color:var(--primary); border:1px solid #cbd5e0;" onclick="window.editAmount(', r.id, ')">編輯</button>'].join(''));
+'<span style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">',
+'<button type="button" class="btn-sm" style="background:#fff; color:var(--primary); border:1px solid #cbd5e0;" onclick="window.editAmount(', r.id, ')">編輯</button>',
+'<button type="button" class="btn-sm" style="background:var(--danger); color:#fff;" onclick="window.move(', r.id, ',\'trash\')">刪除</button>',
+'</span>'].join(''));
 return ['<div class="log-item ', (isTrash?'is-trash':(r.isCompleted?'completed':'pending')), '">',
 '<div style="display:flex; justify-content:space-between; margin-bottom:10px; align-items:flex-start;"><span style="color:#718096; font-size:14px; font-weight:700;">', r.date.substring(5), ' | 🚛 ', r.ton, ' 噸</span>',
 '<span style="font-weight:900; color:var(--primary); font-size:17px;">NT ', r.gross.toLocaleString(), ' 元</span></div>',
