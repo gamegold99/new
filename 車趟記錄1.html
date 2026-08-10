@@ -380,7 +380,7 @@ if (needsMigration) commit();
 function updateUI() {
 find('trash-count').innerText = DB.trash.length;
 renderHistory();
-if (find('trashContainer') && find('trashContainer').style.display === 'block') renderTrash();
+if (find('trashManagement') && find('trashManagement').style.display === 'block') renderTrash();
 if (find('priceSettingsContainer')) renderSettings();
 /*
  * 地點清單不能只依賴價格/里程規則。
@@ -624,7 +624,7 @@ function clearTrash() {
 
 function buildCard(r, isTrash) {
 var tag = (r.isRoundTrip ? "來回" : "單趟"); if (r.isSlightOverweight) tag += " +小超重";
-if (r.dests.length > 1) tag += " +多點x" + (r.dests.length - 1);
+var destList = Array.isArray(r.dests) ? r.dests : (r.end ? [r.end] : (r.to ? [r.to] : [])); if (destList.length > 1) tag += " +多點x" + (destList.length - 1);
 var btns = isTrash ?
 (['<button class="btn-sm" style="background:var(--primary);" onclick="move(', r.id, ',\'back\')">復原</button>',
 '<button class="btn-sm" style="background:var(--gray); margin-left:10px;" onclick="move(', r.id, ',\'kill\')">永久刪除</button>'].join('')) :
