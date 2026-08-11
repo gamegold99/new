@@ -112,20 +112,38 @@
     return value && typeof value === 'object' && Array.isArray(value.logs) && Array.isArray(value.trash) && value.km && value.price;
   }
 
+  function mergeDeletedLists(a, b) {
+    var merged = [];
+    (Array.isArray(a) ? a : []).concat(Array.isArray(b) ? b : []).forEach(function (id) {
+      if (id !== null && id !== undefined && String(id)) merged.push(String(id));
+    });
+    return Array.from(new Set(merged));
+  }
+
   function mergeTrips(localLogs, localTrash, remoteLogs, remoteTrash, deletedTrash) {
     var choices = {};
     var deleted = new Set((Array.isArray(deletedTrash) ? deletedTrash : []).map(String));
+
     function add(items, inTrash) {
       (Array.isArray(items) ? items : []).forEach(function (record) {
         if (!record || !recordKey(record)) return;
         var key = recordKey(record);
-        if (inTrash && deleted.has(key)) return;
+        // A tombstone means the record must stay deleted regardless of whether
+        // the stale cloud copy is in logs or in trash.
+        if (deleted.has(key)) return;
         var candidate = { record: record, inTrash: inTrash };
         var current = choices[key];
-        if (!current || timeValue(candidate.record.updatedAt || candidate.record.createdAt) >= timeValue(current.record.updatedAt || current.record.createdAt)) choices[key] = candidate;
+        if (!current || timeValue(candidate.record.updatedAt || candidate.record.createdAt || candidate.record.id) >= timeValue(current.record.updatedAt || current.record.createdAt || current.record.id)) {
+          choices[key] = candidate;
+        }
       });
     }
-    add(remoteLogs, false); add(remoteTrash, true); add(localLogs, false); add(localTrash, true);
+
+    add(remoteLogs, false);
+    add(remoteTrash, true);
+    add(localLogs, false);
+    add(localTrash, true);
+
     var logs = [], trash = [];
     Object.keys(choices).forEach(function (key) {
       var item = choices[key];
@@ -138,7 +156,14 @@
     if (!validSnapshot(snapshot)) return false;
     var meta = readMeta();
     var localWasChangedSinceSync = timeValue(meta.localChangedAt) > timeValue(meta.lastSyncedAt);
-    var merged = mergeTrips(DB.logs, DB.trash, snapshot.logs, snapshot.trash, snapshot.deletedTrash);
+
+    // Keep deletion tombstones from BOTH sides. The previous version only
+    // used the cloud list here, so a stale cloud snapshot could resurrect
+    // a locally-cleared record before the next upload.
+    var deletedTrash = mergeDeletedLists(readDeletedTrash(), snapshot.deletedTrash);
+    writeDeletedTrash(deletedTrash);
+
+    var merged = mergeTrips(DB.logs, DB.trash, snapshot.logs, snapshot.trash, deletedTrash);
     applyingRemote = true;
     DB.logs = merged.logs;
     DB.trash = merged.trash;
