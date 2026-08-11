@@ -128,9 +128,11 @@
       (Array.isArray(items) ? items : []).forEach(function (record) {
         if (!record || !recordKey(record)) return;
         var key = recordKey(record);
-        // A tombstone means the record must stay deleted regardless of whether
-        // the stale cloud copy is in logs or in trash.
-        if (deleted.has(key)) return;
+        // Records created before syncId was introduced may be stored in the
+        // cloud with a generated syncId later. Check BOTH syncId and legacy id
+        // so a tombstone created before syncId assignment still blocks revival.
+        var legacyId = record && record.id != null ? String(record.id) : '';
+        if (deleted.has(key) || (legacyId && deleted.has(legacyId))) return;
         var candidate = { record: record, inTrash: inTrash };
         var current = choices[key];
         if (!current || timeValue(candidate.record.updatedAt || candidate.record.createdAt || candidate.record.id) >= timeValue(current.record.updatedAt || current.record.createdAt || current.record.id)) {
