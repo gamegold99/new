@@ -770,6 +770,11 @@ function clearTrash() {
         " 筆資料嗎？\n\n此操作無法復原。"
     )) return;
 
+    var purgedIds = DB.trash.map(function(r) { return r.syncId || r.id; });
+    if (window.TripCloud && typeof window.TripCloud.forgetTrashRecords === 'function') {
+        window.TripCloud.forgetTrashRecords(purgedIds);
+    }
+
     DB.trash = [];
     if (commit()) {
         updateUI();
@@ -814,7 +819,8 @@ window.move = function(id, act) {
 if (act === 'kill' && !confirm("警告：永久刪除將無法救回，確定嗎？")) return;
 if (act === 'trash' && !confirm("確定要將此紀錄移至回收桶？")) return;
 if (act === 'trash') { for(var i=0; i<DB.logs.length; i++) { if(DB.logs[i].id===id) { var movedToTrash = DB.logs.splice(i,1)[0]; movedToTrash.updatedAt = new Date().toISOString(); DB.trash.push(movedToTrash); break; } } }
-if (act === 'back') { for(var j=0; j<DB.trash.length; j++) { if(DB.trash[j].id===id) { var restored = DB.trash.splice(j,1)[0]; restored.updatedAt = new Date().toISOString(); DB.logs.push(restored); break; } } }
+if (act === 'kill') { for(var k=0; k<DB.trash.length; k++) { if(String(DB.trash[k].id)===String(id)) { var killed = DB.trash[k]; if (window.TripCloud && typeof window.TripCloud.forgetTrashRecords === 'function') window.TripCloud.forgetTrashRecords([killed.syncId || killed.id]); DB.trash.splice(k,1); break; } } }
+if (act === 'back') { for(var j=0; j<DB.trash.length; j++) { if(DB.trash[j].id===id) { var restored = DB.trash.splice(j,1)[0]; if (window.TripCloud && typeof window.TripCloud.restoreTrashRecords === 'function') window.TripCloud.restoreTrashRecords([restored.syncId || restored.id]); restored.updatedAt = new Date().toISOString(); DB.logs.push(restored); break; } } }
 commit();
 };
 window.editAmount = function(id) {
