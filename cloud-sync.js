@@ -1,26 +1,40 @@
-/* Local-first personal sync for the existing trip database. */
+/* Local-first cloud sync for the trip manager.
+ * Rule: an initialized device is authoritative. Cloud is backup/sync, not master.
+ * A brand-new device with no local data may bootstrap from the cloud once.
+ */
 (function () {
   'use strict';
 
   var config = window.TRIP_CLOUD_CONFIG;
-  var status = function (message, isError) {
+  var META_KEY = 'logistic_sync_meta';
+  var syncing = false;
+  var syncTimer = null;
+  var applyingRemote = false;
+
+  function status(message, isError) {
     var el = document.getElementById('cloud-status');
     if (!el) return;
     el.textContent = message;
     el.style.color = isError ? 'var(--danger)' : '#718096';
-  };
+  }
 
   if (!config || !config.url || !config.anonKey || !window.supabase) {
     status('雲端設定尚未完成', true);
     return;
   }
 
-  var client = window.supabase.createClient(config.url, config.anonKey);
-  var META_KEY = 'logistic_sync_meta';
-  var DELETED_TRASH_KEY = 'logistic_deleted_trash';
-  var syncing = false;
-  var applyingRemote = false;
-  var syncTimer;
+  var client = window.supabase.createClient(config.url, config.anonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      flowType: 'pkce',
+      detectSessionInUrl: false
+    }
+  });
+
+  function clone(value, fallback) {
+    try { return JSON.parse(JSON.stringify(value)); } catch (e) { return fallback; }
+  }
 
   function readMeta() {
     try {
@@ -33,56 +47,22 @@
     try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (e) {}
   }
 
-  function readDeletedTrash() {
-    try {
-      var value = JSON.parse(localStorage.getItem(DELETED_TRASH_KEY) || '[]');
-      return Array.isArray(value) ? value.map(String) : [];
-    } catch (e) { return []; }
-  }
-
-  function writeDeletedTrash(list) {
-    try { localStorage.setItem(DELETED_TRASH_KEY, JSON.stringify(Array.from(new Set(list.map(String))))); } catch (e) {}
-  }
-
-  function rememberDeletedTrash(ids) {
-    var list = readDeletedTrash();
-    (Array.isArray(ids) ? ids : [ids]).forEach(function (id) {
-      if (id !== null && id !== undefined && String(id)) list.push(String(id));
-    });
-    writeDeletedTrash(list);
-  }
-
-  function forgetDeletedTrash(ids) {
-    var remove = new Set((Array.isArray(ids) ? ids : [ids]).map(String));
-    writeDeletedTrash(readDeletedTrash().filter(function (id) { return !remove.has(String(id)); }));
-  }
-
   function getDeviceId() {
     var meta = readMeta();
     if (!meta.deviceId) {
-      meta.deviceId = (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : ('device-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+      meta.deviceId = (window.crypto && window.crypto.randomUUID)
+        ? window.crypto.randomUUID()
+        : ('device-' + Date.now() + '-' + Math.random().toString(36).slice(2));
       writeMeta(meta);
     }
     return meta.deviceId;
-  }
-
-  function timeValue(value) {
-    if (typeof value === 'number' && isFinite(value)) return value;
-    var number = Number(value);
-    if (isFinite(number) && number > 0) return number;
-    var parsed = Date.parse(value || '');
-    return isFinite(parsed) ? parsed : 0;
-  }
-
-  function recordKey(record) {
-    return String(record.syncId || record.id || '');
   }
 
   function ensureRecordIds() {
     var changed = false;
     var deviceId = getDeviceId();
     [DB.logs, DB.trash].forEach(function (items) {
-      items.forEach(function (record) {
+      (items || []).forEach(function (record) {
         if (!record.syncId) {
           record.syncId = deviceId + ':' + String(record.id || Date.now());
           changed = true;
@@ -92,94 +72,47 @@
     return changed;
   }
 
-  function clone(value, fallback) {
-    try { return JSON.parse(JSON.stringify(value)); } catch (e) { return fallback; }
-  }
-
   function buildSnapshot() {
     return {
-      version: 1,
+      version: 3,
       logs: clone(DB.logs, []),
       trash: clone(DB.trash, []),
-      deletedTrash: readDeletedTrash(),
       km: clone(DB.km, {}),
       price: clone(DB.price, {}),
-      savedAt: new Date().toISOString()
+      savedAt: new Date().toISOString(),
+      source: 'local-first'
     };
   }
 
   function validSnapshot(value) {
-    return value && typeof value === 'object' && Array.isArray(value.logs) && Array.isArray(value.trash) && value.km && value.price;
+    return value && typeof value === 'object' &&
+      Array.isArray(value.logs) && Array.isArray(value.trash) &&
+      value.km && value.price;
   }
 
-  function mergeDeletedLists(a, b) {
-    var merged = [];
-    (Array.isArray(a) ? a : []).concat(Array.isArray(b) ? b : []).forEach(function (id) {
-      if (id !== null && id !== undefined && String(id)) merged.push(String(id));
-    });
-    return Array.from(new Set(merged));
+  function localHasAnyData() {
+    return (Array.isArray(DB.logs) && DB.logs.length > 0) ||
+      (Array.isArray(DB.trash) && DB.trash.length > 0) ||
+      (DB.km && Object.keys(DB.km).length > 0) ||
+      (DB.price && Object.keys(DB.price).length > 0);
   }
 
-  function mergeTrips(localLogs, localTrash, remoteLogs, remoteTrash, deletedTrash) {
-    var choices = {};
-    var deleted = new Set((Array.isArray(deletedTrash) ? deletedTrash : []).map(String));
-
-    function add(items, inTrash) {
-      (Array.isArray(items) ? items : []).forEach(function (record) {
-        if (!record || !recordKey(record)) return;
-        var key = recordKey(record);
-        // Records created before syncId was introduced may be stored in the
-        // cloud with a generated syncId later. Check BOTH syncId and legacy id
-        // so a tombstone created before syncId assignment still blocks revival.
-        var legacyId = record && record.id != null ? String(record.id) : '';
-        if (deleted.has(key) || (legacyId && deleted.has(legacyId))) return;
-        var candidate = { record: record, inTrash: inTrash };
-        var current = choices[key];
-        if (!current || timeValue(candidate.record.updatedAt || candidate.record.createdAt || candidate.record.id) >= timeValue(current.record.updatedAt || current.record.createdAt || current.record.id)) {
-          choices[key] = candidate;
-        }
-      });
-    }
-
-    add(remoteLogs, false);
-    add(remoteTrash, true);
-    add(localLogs, false);
-    add(localTrash, true);
-
-    var logs = [], trash = [];
-    Object.keys(choices).forEach(function (key) {
-      var item = choices[key];
-      if (item.inTrash) trash.push(item.record); else logs.push(item.record);
-    });
-    return { logs: logs, trash: trash };
+  function isInitialized() {
+    return !!readMeta().initialized;
   }
 
-  function applyRemote(snapshot, remoteUpdatedAt) {
-    if (!validSnapshot(snapshot)) return false;
+  function markInitialized() {
     var meta = readMeta();
-    var localWasChangedSinceSync = timeValue(meta.localChangedAt) > timeValue(meta.lastSyncedAt);
-
-    // Keep deletion tombstones from BOTH sides. The previous version only
-    // used the cloud list here, so a stale cloud snapshot could resurrect
-    // a locally-cleared record before the next upload.
-    var deletedTrash = mergeDeletedLists(readDeletedTrash(), snapshot.deletedTrash);
-    writeDeletedTrash(deletedTrash);
-
-    var merged = mergeTrips(DB.logs, DB.trash, snapshot.logs, snapshot.trash, deletedTrash);
-    applyingRemote = true;
-    DB.logs = merged.logs;
-    DB.trash = merged.trash;
-    /* If this device has not edited settings since its last sync, cloud is authoritative. */
-    if (!localWasChangedSinceSync) {
-      DB.km = clone(snapshot.km, {});
-      DB.price = clone(snapshot.price, {});
-    }
-    var result = commit();
-    applyingRemote = false;
-    if (result === false) return false;
-    meta.lastRemoteUpdatedAt = remoteUpdatedAt || meta.lastRemoteUpdatedAt;
+    meta.initialized = true;
+    meta.localChangedAt = new Date().toISOString();
     writeMeta(meta);
-    return true;
+  }
+
+  function markSynced() {
+    var meta = readMeta();
+    meta.initialized = true;
+    meta.lastSyncedAt = new Date().toISOString();
+    writeMeta(meta);
   }
 
   function updateAccountUI(user) {
@@ -202,31 +135,86 @@
     return result.data && result.data.user ? result.data.user : null;
   }
 
+  async function uploadLocal(user) {
+    if (ensureRecordIds()) {
+      applyingRemote = true;
+      try {
+        if (originalCommit() === false) throw new Error('本機資料無法儲存');
+      } finally { applyingRemote = false; }
+    }
+
+    var upload = await client.from('trip_sync_state').upsert({
+      user_id: user.id,
+      data: buildSnapshot(),
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+
+    if (upload.error) throw upload.error;
+    markSynced();
+  }
+
+  async function bootstrapFromCloud(user, remoteSnapshot) {
+    if (!validSnapshot(remoteSnapshot)) {
+      markSynced();
+      return;
+    }
+
+    applyingRemote = true;
+    try {
+      DB.logs = clone(remoteSnapshot.logs, []);
+      DB.trash = clone(remoteSnapshot.trash, []);
+      DB.km = clone(remoteSnapshot.km, {});
+      DB.price = clone(remoteSnapshot.price, {});
+      if (originalCommit() === false) throw new Error('雲端資料寫入本機失敗');
+    } finally {
+      applyingRemote = false;
+    }
+
+    await uploadLocal(user);
+  }
+
   async function syncNow(showMessage) {
     if (syncing) return;
+
     var user;
-    try { user = await currentUser(); } catch (e) { status('無法確認登入狀態', true); return; }
-    if (!user) { if (showMessage) status('請先登入', true); return; }
+    try { user = await currentUser(); }
+    catch (e) {
+      status('無法確認登入狀態', true);
+      return;
+    }
+
+    if (!user) {
+      if (showMessage) status('請先登入', true);
+      return;
+    }
 
     syncing = true;
     status('同步中…');
+
     try {
-      if (ensureRecordIds()) {
-        applyingRemote = true;
-        if (commit() === false) throw new Error('本機資料無法儲存');
-        applyingRemote = false;
-      }
-      var remote = await client.from('trip_sync_state').select('data, updated_at').eq('user_id', user.id).maybeSingle();
+      var remote = await client
+        .from('trip_sync_state')
+        .select('data, updated_at')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
       if (remote.error) throw remote.error;
-      if (remote.data && remote.data.data) applyRemote(remote.data.data, remote.data.updated_at);
 
-      var upload = await client.from('trip_sync_state').upsert({ user_id: user.id, data: buildSnapshot(), updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
-      if (upload.error) throw upload.error;
-
-      var meta = readMeta();
-      meta.lastSyncedAt = new Date().toISOString();
-      writeMeta(meta);
-      status('已同步');
+      /* LOCAL-FIRST RULE:
+       * Once this device has initialized, never download/merge remote data
+       * merely because a login or automatic sync occurred. Upload local state.
+       * Only a genuinely new, empty device bootstraps from cloud once.
+       */
+      if (isInitialized() || localHasAnyData()) {
+        await uploadLocal(user);
+        status('已同步（以本機資料為主）');
+      } else if (remote.data && validSnapshot(remote.data.data)) {
+        await bootstrapFromCloud(user, remote.data.data);
+        status('已從雲端載入（首次登入）');
+      } else {
+        await uploadLocal(user);
+        status('已建立雲端備份');
+      }
     } catch (error) {
       status('同步失敗：' + (error.message || '請稍後再試'), true);
     } finally {
@@ -241,7 +229,9 @@
     if (!email) { status('請輸入 Email', true); return; }
     status('正在寄送登入連結…');
     var options = {};
-    if (/^https?:$/i.test(window.location.protocol)) options.emailRedirectTo = window.location.href.split('#')[0];
+    if (/^https?:$/i.test(window.location.protocol)) {
+      options.emailRedirectTo = window.location.href.split('#')[0];
+    }
     var result = await client.auth.signInWithOtp({ email: email, options: options });
     if (result.error) status('寄送失敗：' + result.error.message, true);
     else status('登入連結已寄出，請至 Email 開啟');
@@ -252,14 +242,13 @@
     if (result.error) status('登出失敗：' + result.error.message, true);
   }
 
-  /* Existing code continues to call commit(); this wrapper only queues cloud sync after a successful local save. */
-  var localCommit = commit;
+  /* Wrap the existing local commit. Any local operation marks the device
+   * initialized, then queues a local-first upload. */
+  var originalCommit = commit;
   commit = function () {
-    var result = localCommit();
+    var result = originalCommit();
     if (result !== false && !applyingRemote) {
-      var meta = readMeta();
-      meta.localChangedAt = new Date().toISOString();
-      writeMeta(meta);
+      markInitialized();
       scheduleSync(1200);
     }
     return result;
@@ -270,17 +259,13 @@
     updateAccountUI(user);
     if (user) scheduleSync(400);
   });
+
   window.addEventListener('online', function () { scheduleSync(300); });
+
   window.TripCloud = {
     sendOtp: sendOtp,
     signOut: signOut,
-    syncNow: syncNow,
-    forgetTrashRecords: function (ids) {
-      rememberDeletedTrash(ids);
-    },
-    restoreTrashRecords: function (ids) {
-      forgetDeletedTrash(ids);
-    }
+    syncNow: syncNow
   };
 
   client.auth.getUser().then(function (result) {
