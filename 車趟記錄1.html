@@ -832,117 +832,266 @@ window.editAmount = function(id) {
         return;
     }
 
-    var currentDate = record.date || "";
-    var currentTon = record.ton || record.truckType || "1.5噸";
-    var currentStart = record.start || record.from || "";
     var currentDests = Array.isArray(record.dests)
         ? record.dests.slice()
         : (record.to ? [record.to].concat(Array.isArray(record.stops) ? record.stops : []) : []);
-    var currentAmount = Number(record.gross != null ? record.gross : record.totalPrice);
-    if (!isFinite(currentAmount) || currentAmount < 0) currentAmount = 0;
 
-    var nextDate = window.prompt(
-        "修改車趟日期\n\n目前：" + currentDate + "\n\n請輸入日期（YYYY-MM-DD）：",
-        currentDate
-    );
-    if (nextDate === null) return;
-    nextDate = String(nextDate).trim();
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(nextDate)) {
-        alert("日期格式錯誤，請使用 YYYY-MM-DD，例如 2026-08-11");
-        return;
+    if (!currentDests.length) currentDests = [""];
+    while (currentDests.length < 1) currentDests.push("");
+
+    var amount = Number(record.gross != null ? record.gross : record.totalPrice);
+    if (!isFinite(amount) || amount < 0) amount = 0;
+
+    /* 建立手機友善的「完整編輯」底部抽屜。
+       不再使用一個欄位跳一次 prompt，所有欄位一次完成。 */
+    var old = document.getElementById("trip-edit-modal");
+    if (old) old.remove();
+
+    var modal = document.createElement("div");
+    modal.id = "trip-edit-modal";
+    modal.innerHTML =
+        '<div class="trip-edit-backdrop"></div>' +
+        '<div class="trip-edit-sheet" role="dialog" aria-modal="true" aria-label="編輯車趟">' +
+          '<div class="trip-edit-head">' +
+            '<div><div class="trip-edit-title">✏️ 編輯車趟</div><div class="trip-edit-subtitle">一次修改整筆車趟資料</div></div>' +
+            '<button type="button" class="trip-edit-close" aria-label="關閉">×</button>' +
+          '</div>' +
+          '<div class="trip-edit-body">' +
+
+            '<div class="trip-edit-field">' +
+              '<label for="edit-trip-date">📅 日期</label>' +
+              '<input id="edit-trip-date" type="date">' +
+            '</div>' +
+
+            '<div class="trip-edit-field">' +
+              '<label for="edit-trip-ton">🚛 車型噸數</label>' +
+              '<select id="edit-trip-ton">' +
+                '<option value="0.7">0.7 噸</option>' +
+                '<option value="1.5">1.5 噸</option>' +
+                '<option value="3.5">3.5 噸</option>' +
+              '</select>' +
+            '</div>' +
+
+            '<div class="trip-edit-field">' +
+              '<label>📍 運輸路線</label>' +
+              '<div class="trip-edit-route-row">' +
+                '<input id="edit-trip-start" type="text" placeholder="起點" list="location-options" autocomplete="off">' +
+                '<span class="trip-edit-arrow">→</span>' +
+                '<input id="edit-trip-dest-0" type="text" placeholder="終點" list="location-options" autocomplete="off">' +
+              '</div>' +
+              '<div id="edit-trip-stops"></div>' +
+              '<button type="button" id="edit-trip-add-stop" class="trip-edit-add-stop">＋ 新增停靠點</button>' +
+              '<div class="trip-edit-hint">每個新增停靠點仍依目前計價規則計算 NT$200。</div>' +
+            '</div>' +
+
+            '<div class="trip-edit-options">' +
+              '<label class="trip-edit-check"><input id="edit-trip-round" type="checkbox"><span>來回 <b>(+50%)</b></span></label>' +
+              '<label class="trip-edit-check danger"><input id="edit-trip-overweight" type="checkbox"><span>小超重 <b>(+300)</b></span></label>' +
+            '</div>' +
+
+            '<div class="trip-edit-field">' +
+              '<label for="edit-trip-amount">💰 業績金額</label>' +
+              '<div class="trip-edit-money"><span>NT$</span><input id="edit-trip-amount" type="number" min="0" step="1" inputmode="numeric"></div>' +
+            '</div>' +
+
+            '<div class="trip-edit-field">' +
+              '<label>📌 完成狀態</label>' +
+              '<label class="trip-edit-complete"><input id="edit-trip-completed" type="checkbox"><span id="edit-trip-completed-text">未完成</span></label>' +
+            '</div>' +
+
+          '</div>' +
+          '<div class="trip-edit-footer">' +
+            '<button type="button" id="edit-trip-cancel" class="trip-edit-cancel">取消</button>' +
+            '<button type="button" id="edit-trip-save" class="trip-edit-save">💾 儲存修改</button>' +
+          '</div>' +
+        '</div>';
+
+    document.body.appendChild(modal);
+
+    /* 只注入一次樣式，避免影響其他畫面。 */
+    if (!document.getElementById("trip-edit-style")) {
+        var style = document.createElement("style");
+        style.id = "trip-edit-style";
+        style.textContent = `
+#trip-edit-modal{position:fixed;inset:0;z-index:99999;display:flex;align-items:flex-end;justify-content:center}
+.trip-edit-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.58);backdrop-filter:blur(2px)}
+.trip-edit-sheet{position:relative;width:min(600px,100%);max-height:92vh;background:#f8fafc;border-radius:24px 24px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.2);display:flex;flex-direction:column;overflow:hidden;animation:tripEditUp .2s ease-out}
+@keyframes tripEditUp{from{transform:translateY(20px);opacity:.5}to{transform:translateY(0);opacity:1}}
+.trip-edit-head{background:#fff;padding:18px 20px 14px;border-bottom:1px solid #edf2f7;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.trip-edit-title{font-size:21px;font-weight:900;color:#2c3e50}
+.trip-edit-subtitle{font-size:13px;color:#718096;margin-top:2px}
+.trip-edit-close{width:42px;height:42px;border:0;border-radius:50%;background:#f1f5f9;color:#475569;font-size:28px;line-height:1;cursor:pointer}
+.trip-edit-body{padding:18px 18px 10px;overflow:auto;-webkit-overflow-scrolling:touch}
+.trip-edit-field{margin-bottom:17px}
+.trip-edit-field>label{display:block;margin:0 0 8px;font-weight:800;color:#475569;font-size:15px}
+.trip-edit-field input,.trip-edit-field select{background:#fff;border:1.5px solid #e2e8f0;border-radius:13px;padding:13px 14px;font-size:17px;min-height:48px}
+.trip-edit-route-row{display:flex;align-items:center;gap:8px}
+.trip-edit-route-row input{min-width:0;flex:1}
+.trip-edit-arrow{font-size:23px;font-weight:900;color:#94a3b8;flex:0 0 auto}
+.trip-edit-stop-row{display:flex;align-items:center;gap:8px;margin-top:9px}
+.trip-edit-stop-row input{min-width:0;flex:1}
+.trip-edit-remove-stop{width:46px;height:46px;border:1px solid #fecaca;background:#fff1f2;color:#dc2626;border-radius:12px;font-size:20px;font-weight:900}
+.trip-edit-add-stop{width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1.5px dashed #cbd5e1;background:#fff;color:#334155;font-size:15px;font-weight:800}
+.trip-edit-hint{font-size:12px;color:#94a3b8;margin-top:7px}
+.trip-edit-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:3px 0 18px}
+.trip-edit-check{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid #e2e8f0;border-radius:13px;padding:13px;font-weight:800;color:#475569}
+.trip-edit-check input{width:22px!important;height:22px!important;min-height:0!important;flex:0 0 auto}
+.trip-edit-check.danger{color:#d94b45}
+.trip-edit-money{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #e2e8f0;border-radius:13px;padding:0 13px}
+.trip-edit-money span{font-size:18px;font-weight:900;color:#475569}
+.trip-edit-money input{border:0!important;padding-left:0!important;box-shadow:none!important}
+.trip-edit-complete{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e2e8f0;border-radius:13px;padding:12px 14px;font-weight:900;color:#475569}
+.trip-edit-complete input{width:23px!important;height:23px!important;min-height:0!important}
+.trip-edit-footer{display:grid;grid-template-columns:1fr 1.5fr;gap:10px;padding:12px 18px max(12px,env(safe-area-inset-bottom));background:#fff;border-top:1px solid #edf2f7}
+.trip-edit-footer button{min-height:52px;border-radius:13px;font-size:17px;font-weight:900}
+.trip-edit-cancel{border:1px solid #cbd5e1;background:#fff;color:#475569}
+.trip-edit-save{border:0;background:#2c3e50;color:#fff;box-shadow:0 4px 12px rgba(44,62,80,.2)}
+@media(max-width:420px){.trip-edit-options{grid-template-columns:1fr}.trip-edit-title{font-size:19px}.trip-edit-body{padding-left:14px;padding-right:14px}.trip-edit-footer{padding-left:14px;padding-right:14px}}
+        `;
+        document.head.appendChild(style);
     }
 
-    var nextTon = window.prompt(
-        "修改車型噸數\n\n目前：" + currentTon + "\n\n可輸入：0.7噸、1.5噸、3.5噸",
-        currentTon
-    );
-    if (nextTon === null) return;
-    nextTon = String(nextTon).trim();
-    if (["0.7噸", "1.5噸", "3.5噸"].indexOf(nextTon) === -1) {
-        alert("車型請輸入：0.7噸、1.5噸或 3.5噸");
-        return;
+    var dateInput = document.getElementById("edit-trip-date");
+    var tonInput = document.getElementById("edit-trip-ton");
+    var startInput = document.getElementById("edit-trip-start");
+    var amountInput = document.getElementById("edit-trip-amount");
+    var roundInput = document.getElementById("edit-trip-round");
+    var overweightInput = document.getElementById("edit-trip-overweight");
+    var completedInput = document.getElementById("edit-trip-completed");
+    var completedText = document.getElementById("edit-trip-completed-text");
+    var stopsBox = document.getElementById("edit-trip-stops");
+
+    dateInput.value = record.date || "";
+    tonInput.value = String(record.ton || record.truckType || "1.5");
+    if (["0.7","1.5","3.5"].indexOf(tonInput.value) === -1) tonInput.value = "1.5";
+    startInput.value = record.start || record.from || "";
+    amountInput.value = String(amount);
+    roundInput.checked = !!record.isRoundTrip;
+    overweightInput.checked = !!(record.isSlightOverweight || record.isOverWeight);
+    completedInput.checked = !!(record.isCompleted || record.completed);
+
+    function updateCompletedText() {
+        completedText.textContent = completedInput.checked ? "已完成" : "未完成";
+        completedText.style.color = completedInput.checked ? "#22543d" : "#822727";
+    }
+    updateCompletedText();
+    completedInput.addEventListener("change", updateCompletedText);
+
+    var stopValues = currentDests.slice(1);
+
+    function renderEditStops() {
+        stopsBox.innerHTML = "";
+        stopValues.forEach(function(value, index) {
+            var row = document.createElement("div");
+            row.className = "trip-edit-stop-row";
+            row.innerHTML =
+                '<input type="text" list="location-options" autocomplete="off" placeholder="停靠點 ' + (index + 1) + '">' +
+                '<button type="button" class="trip-edit-remove-stop" aria-label="刪除停靠點">×</button>';
+            var input = row.querySelector("input");
+            input.value = value || "";
+            row.querySelector("button").addEventListener("click", function() {
+                stopValues.splice(index, 1);
+                renderEditStops();
+            });
+            stopsBox.appendChild(row);
+        });
     }
 
-    var nextStart = window.prompt(
-        "修改起點\n\n目前：" + currentStart + "\n\n請輸入新的起點：",
-        currentStart
-    );
-    if (nextStart === null) return;
-    nextStart = String(nextStart).trim();
-    if (!nextStart) {
-        alert("起點不能空白");
-        return;
+    renderEditStops();
+
+    /* 既有資料若有多個終點，第二個以後視為停靠點。 */
+    document.getElementById("edit-trip-dest-0").value = currentDests[0] || "";
+
+    document.getElementById("edit-trip-add-stop").addEventListener("click", function() {
+        var inputs = stopsBox.querySelectorAll("input");
+        stopValues = Array.prototype.map.call(inputs, function(input) {
+            return input.value.trim();
+        });
+        stopValues.push("");
+        renderEditStops();
+        setTimeout(function() {
+            var last = stopsBox.querySelectorAll("input");
+            if (last.length) last[last.length - 1].focus();
+        }, 0);
+    });
+
+    function closeEdit() {
+        var el = document.getElementById("trip-edit-modal");
+        if (el) el.remove();
+        document.body.style.overflow = "";
     }
 
-    var nextRoute = window.prompt(
-        "修改終點／停靠點\n\n目前：" + (currentDests.length ? currentDests.join(" → ") : "（無）") +
-        "\n\n請依照順序輸入，使用「、」分隔。\n例如：土城區、土城區、板橋區",
-        currentDests.join("、")
-    );
-    if (nextRoute === null) return;
-    var nextDests = String(nextRoute)
-        .split(/[、,，>＞→]+/)
-        .map(function(v){ return String(v || '').trim(); })
-        .filter(Boolean);
-    if (!nextDests.length) {
-        alert("至少要有一個終點／停靠點");
-        return;
-    }
+    document.body.style.overflow = "hidden";
+    modal.querySelector(".trip-edit-backdrop").addEventListener("click", closeEdit);
+    modal.querySelector(".trip-edit-close").addEventListener("click", closeEdit);
+    document.getElementById("edit-trip-cancel").addEventListener("click", closeEdit);
 
-    var nextAmountInput = window.prompt(
-        "修改這筆車趟的業績金額\n\n目前金額：NT " + currentAmount.toLocaleString() +
-        " 元\n\n請輸入新的金額：",
-        String(currentAmount)
-    );
-    if (nextAmountInput === null) return;
-    nextAmountInput = String(nextAmountInput).replace(/,/g, "").trim();
-    if (nextAmountInput === "" || !isFinite(Number(nextAmountInput))) {
-        alert("請輸入有效的金額");
-        return;
-    }
-    var nextAmount = Number(nextAmountInput);
-    if (nextAmount < 0) {
-        alert("金額不能小於 0");
-        return;
-    }
+    document.getElementById("edit-trip-save").addEventListener("click", function() {
+        var nextDate = dateInput.value.trim();
+        var nextTon = tonInput.value;
+        var nextStart = startInput.value.trim();
+        var destInput = document.getElementById("edit-trip-dest-0");
+        var nextDest = destInput.value.trim();
 
-    var nextRound = window.confirm(
-        "是否為來回？\n\n目前：" + (record.isRoundTrip ? "是" : "否") +
-        "\n\n按「確定」= 來回\n按「取消」= 單趟"
-    );
+        var liveStops = Array.prototype.map.call(
+            stopsBox.querySelectorAll("input"),
+            function(input) { return input.value.trim(); }
+        ).filter(Boolean);
 
-    var nextOverweight = window.confirm(
-        "是否小超重？\n\n目前：" + (record.isSlightOverweight || record.isOverWeight ? "是" : "否") +
-        "\n\n按「確定」= 小超重\n按「取消」= 一般"
-    );
+        if (!nextDate) {
+            alert("請選擇日期");
+            dateInput.focus();
+            return;
+        }
+        if (!nextStart) {
+            alert("請輸入起點");
+            startInput.focus();
+            return;
+        }
+        if (!nextDest) {
+            alert("請輸入終點");
+            destInput.focus();
+            return;
+        }
 
-    var nextCompleted = window.confirm(
-        "是否標記為已完成？\n\n目前：" + (record.isCompleted || record.completed ? "已完成" : "未完成") +
-        "\n\n按「確定」= 已完成\n按「取消」= 未完成"
-    );
+        var amountText = amountInput.value.trim();
+        var nextAmount = Number(amountText);
+        if (amountText === "" || !isFinite(nextAmount) || nextAmount < 0) {
+            alert("請輸入有效的業績金額");
+            amountInput.focus();
+            return;
+        }
 
-    record.date = nextDate;
-    record.ton = nextTon;
-    record.truckType = nextTon;
-    record.start = nextStart;
-    record.from = nextStart;
-    record.to = nextDests[0];
-    record.stops = nextDests.slice(1);
-    record.dests = nextDests;
-    record.gross = nextAmount;
-    record.totalPrice = nextAmount;
-    record.isRoundTrip = nextRound;
-    record.isSlightOverweight = nextOverweight;
-    record.isOverWeight = nextOverweight;
-    record.isCompleted = nextCompleted;
-    record.completed = nextCompleted;
-    record.updatedAt = new Date().toISOString();
+        var nextDests = [nextDest].concat(liveStops);
+        var completed = completedInput.checked;
+        var overweight = overweightInput.checked;
+        var roundTrip = roundInput.checked;
 
-    if (!commit()) return;
+        record.date = nextDate;
+        record.ton = nextTon;
+        record.truckType = nextTon;
+        record.start = nextStart;
+        record.from = nextStart;
+        record.end = nextDests[0];
+        record.to = nextDests[0];
+        record.dests = nextDests;
+        record.stops = nextDests.slice(1);
+        record.gross = nextAmount;
+        record.total = nextAmount;
+        record.totalPrice = nextAmount;
+        record.isRoundTrip = roundTrip;
+        record.isSlightOverweight = overweight;
+        record.isOverWeight = overweight;
+        record.isCompleted = completed;
+        record.isDone = completed;
+        record.completed = completed;
+        record.updatedAt = new Date().toISOString();
 
-    updateUI();
-    alert("車趟資料已完整更新。\n\n" + nextStart + " → " + nextDests.join(" → ") +
-        "\nNT$ " + nextAmount.toLocaleString() + " 元");
+        if (!commit()) return;
+
+        closeEdit();
+        updateUI();
+    });
 };
 
 function migrationNormalizeRecord(o) {
