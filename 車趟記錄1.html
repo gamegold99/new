@@ -65,24 +65,6 @@ input:focus, select:focus { border-color: var(--accent); outline: none; box-shad
 datalist { display: none; }
 /* Legacy trash cards still contain this control in old markup; deletion is disabled. */
 button[onclick*="'kill'"] { display: none; }
-
-/* ===== 歷史車趟完整編輯視窗 ===== */
-.trip-edit-overlay{position:fixed;inset:0;background:rgba(15,23,42,.62);z-index:9999;display:none;align-items:flex-start;justify-content:center;padding:18px;overflow-y:auto;box-sizing:border-box}
-.trip-edit-modal{width:100%;max-width:620px;background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.28);margin:20px auto;padding:18px;box-sizing:border-box}
-.trip-edit-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;font-size:20px;font-weight:900;color:#2d3748}
-.trip-edit-close{border:0;background:#edf2f7;color:#4a5568;width:40px;height:40px;border-radius:50%;font-size:22px;cursor:pointer}
-.trip-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.trip-edit-field{margin-bottom:12px}
-.trip-edit-field label{display:block;font-weight:800;color:#4a5568;margin-bottom:6px;font-size:14px}
-.trip-edit-field input,.trip-edit-field select{width:100%;box-sizing:border-box}
-.trip-edit-route{display:grid;grid-template-columns:1fr 32px 1fr;gap:8px;align-items:center}
-.trip-edit-stop{display:flex;gap:8px;margin-top:8px}
-.trip-edit-stop input{flex:1}
-.trip-edit-stop button{width:42px;min-width:42px;border:0;border-radius:10px;background:#fed7d7;color:#c53030;font-size:18px}
-.trip-edit-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
-.trip-edit-hint{background:#f7fafc;border:1px dashed #cbd5e0;border-radius:12px;padding:10px 12px;color:#718096;font-size:13px;line-height:1.6;margin:8px 0 14px}
-@media(max-width:480px){.trip-edit-grid{grid-template-columns:1fr}.trip-edit-route{grid-template-columns:1fr}.trip-edit-route .arrow-text{display:none}.trip-edit-modal{margin:5px auto;padding:15px}.trip-edit-overlay{padding:8px}}
-
 </style>
 
 <style id="ui-optimization-v1">
@@ -158,32 +140,6 @@ button[onclick*="'kill'"] { display: none; }
 <button class="btn btn-save" onclick="saveData()">💾 儲存車趟</button>
 </div>
 
-
-<div id="tripEditOverlay" class="trip-edit-overlay" aria-hidden="true">
-  <div class="trip-edit-modal" role="dialog" aria-modal="true" aria-labelledby="tripEditTitle">
-    <div class="trip-edit-title"><span id="tripEditTitle">✏️ 編輯歷史車趟</span><button type="button" class="trip-edit-close" onclick="closeTripEditor()">×</button></div>
-    <div class="trip-edit-hint">可修改日期、車型、起點、所有停靠點、來回、小超重、里程、路線底價、業績金額與完成狀態。儲存前不會改動其他車趟。</div>
-    <div class="trip-edit-grid">
-      <div class="trip-edit-field"><label>日期</label><input type="date" id="edit-date"></div>
-      <div class="trip-edit-field"><label>車型噸數</label><select id="edit-ton"><option value="1.5">1.5 噸</option><option value="3.5">3.5 噸</option><option value="0.7">0.7 噸</option></select></div>
-    </div>
-    <div class="trip-edit-field"><label>起點</label><input type="text" id="edit-start" list="location-options" placeholder="起點"></div>
-    <div class="trip-edit-field"><label>終點</label><input type="text" id="edit-dest" list="location-options" placeholder="終點"></div>
-    <div class="trip-edit-field"><label>其他停靠點</label><div id="edit-stops"></div><button type="button" class="btn-outline" style="margin-top:8px;" onclick="addEditStop()">＋ 新增停靠點</button></div>
-    <div class="trip-edit-grid">
-      <label class="checkbox-group"><input type="checkbox" id="edit-round"><span>來回（+50%）</span></label>
-      <label class="checkbox-group"><input type="checkbox" id="edit-overweight"><span style="color:var(--danger);font-weight:700;">小超重（+300）</span></label>
-    </div>
-    <div class="trip-edit-grid" style="margin-top:12px;">
-      <div class="trip-edit-field"><label>紀錄里程（km）</label><input type="number" id="edit-km" inputmode="decimal" min="0" step="0.1" placeholder="可留空"></div>
-      <div class="trip-edit-field"><label>路線底價（元）</label><input type="number" id="edit-base-price" inputmode="numeric" min="0" step="1" placeholder="可留空"></div>
-    </div>
-    <div class="trip-edit-field"><label>業績金額（元）</label><input type="number" id="edit-gross" inputmode="numeric" min="0" step="1"></div>
-    <label class="checkbox-group"><input type="checkbox" id="edit-completed"><span id="edit-completed-label">未完成</span></label>
-    <div class="trip-edit-actions"><button type="button" class="btn-outline" onclick="closeTripEditor()">取消</button><button type="button" class="btn btn-save" onclick="saveTripEditor()">💾 儲存修改</button></div>
-  </div>
-</div>
-
 <datalist id="location-options"></datalist>
 
 <div class="bar" onclick="togglePanel('settingsManagement')">
@@ -215,6 +171,20 @@ button[onclick*="'kill'"] { display: none; }
 </div>
 
 
+  </div>
+
+  <div class="bar" style="margin-bottom:10px;" onclick="togglePanel('locationManagement')">
+    <span>📍 地點管理</span><span>▼</span>
+  </div>
+
+  <div id="locationManagement" class="panel" style="margin-top:-2px; margin-bottom:12px;">
+    <div class="card" style="padding:15px; box-shadow:none; border:1px solid #edf2f7;">
+      <p style="margin:0 0 12px; color:#718096; font-size:14px; line-height:1.6;">
+        管理起點、終點與停靠點的自動完成清單。修改地點名稱會同步更新里程規則、固定底價與歷史車趟中的地點；刪除已被使用的地點時，系統會改為隱藏，避免破壞既有資料。
+      </p>
+      <input type="search" id="location-search" placeholder="🔎 搜尋地點" oninput="renderLocationManagement()" autocomplete="off">
+      <div id="locationListArea" style="max-height:420px; overflow-y:auto; margin-top:12px;"></div>
+    </div>
   </div>
 
   <div class="bar" style="margin-bottom:10px;" onclick="togglePanel('dataManagement')">
@@ -281,10 +251,10 @@ button[onclick*="'kill'"] { display: none; }
 </div>
 
 <script>
-var STORAGE_VERSION = 2;
+var STORAGE_VERSION = 3;
 var STORAGE_VERSION_KEY = 'logistic_storage_version';
 var STORAGE_BACKUP_KEY = 'logistic_storage_backup';
-var STORAGE_KEYS = ['logistic_kms', 'logistic_prices', 'logistic_logs', 'logistic_trash'];
+var STORAGE_KEYS = ['logistic_kms', 'logistic_prices', 'logistic_logs', 'logistic_trash', 'logistic_locations'];
 
 function isPlainObject(value) {
 return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -317,7 +287,8 @@ var DB = {
 km: getStoredData('logistic_kms', {}),
 price: getStoredData('logistic_prices', {}),
 logs: getStoredData('logistic_logs', []),
-trash: getStoredData('logistic_trash', [])
+trash: getStoredData('logistic_trash', []),
+locations: getStoredData('logistic_locations', {})
 };
 
 var now = new Date();
@@ -382,6 +353,7 @@ var commit = function() {
 var sortFn = function(a,b) { return new Date(b.date) - new Date(a.date) || b.id - a.id; };
 DB.km = isPlainObject(DB.km) ? DB.km : {};
 DB.price = isPlainObject(DB.price) ? DB.price : {};
+DB.locations = isPlainObject(DB.locations) ? DB.locations : {};
 DB.logs = normalizeTripCollection(DB.logs);
 DB.trash = normalizeTripCollection(DB.trash);
 DB.logs.sort(sortFn); DB.trash.sort(sortFn);
@@ -389,7 +361,8 @@ var data = {
 'logistic_kms': JSON.stringify(DB.km),
 'logistic_prices': JSON.stringify(DB.price),
 'logistic_logs': JSON.stringify(DB.logs),
-'logistic_trash': JSON.stringify(DB.trash)
+'logistic_trash': JSON.stringify(DB.trash),
+'logistic_locations': JSON.stringify(DB.locations)
 };
 var previous = {};
 try {
@@ -418,6 +391,8 @@ try { version = parseInt(localStorage.getItem(STORAGE_VERSION_KEY), 10) || 1; } 
 var needsMigration = version < STORAGE_VERSION;
 DB.logs = normalizeTripCollection(DB.logs);
 DB.trash = normalizeTripCollection(DB.trash);
+DB.locations = isPlainObject(DB.locations) ? DB.locations : {};
+ensureLocationRegistry();
 if (needsMigration) commit();
 }
 
@@ -426,39 +401,110 @@ find('trash-count').innerText = DB.trash.length;
 renderHistory();
 if (find('trashManagement') && find('trashManagement').style.display === 'block') renderTrash();
 if (find('priceSettingsContainer')) renderSettings();
-/*
- * 地點清單不能只依賴價格/里程規則。
- * 舊車趟本身就保存了起點、終點與停靠點，因此匯入舊資料後，
- * 應直接把這些行政區加入自動完成清單，不需要重新手動輸入。
- */
-var locs = {};
-
-function addLoc(v) {
-    v = asText(v);
-    if (v) locs[v] = true;
 }
 
-Object.keys(DB.km).concat(Object.keys(DB.price)).forEach(function(k) {
-    var p = k.split('-');
-    addLoc(p[0]);
-    addLoc(p.slice(1).join('-'));
-});
+/*
+ * 地點清單由既有規則、歷史車趟與「地點管理」共同維護。
+ * 管理員可隱藏／重新顯示地點，但不會因清理候選清單而破壞歷史資料。
+ */
+function collectAllLocations() {
+    var locs = {};
+    function addLoc(v) {
+        v = asText(v);
+        if (v) locs[v] = true;
+    }
+    Object.keys(DB.km).concat(Object.keys(DB.price)).forEach(function(k) {
+        var p = k.split('-');
+        addLoc(p[0]);
+        addLoc(p.slice(1).join('-'));
+    });
+    DB.logs.concat(DB.trash).forEach(function(r) {
+        addLoc(r.start); addLoc(r.from); addLoc(r.end); addLoc(r.to);
+        if (Array.isArray(r.dests)) r.dests.forEach(addLoc);
+        if (Array.isArray(r.stops)) r.stops.forEach(addLoc);
+    });
+    Object.keys(DB.locations).forEach(addLoc);
+    return locs;
+}
 
-DB.logs.concat(DB.trash).forEach(function(r) {
-    addLoc(r.start);
-    addLoc(r.from);
-    addLoc(r.end);
-    addLoc(r.to);
+function ensureLocationRegistry() {
+    if (!isPlainObject(DB.locations)) DB.locations = {};
+    var locs = collectAllLocations();
+    Object.keys(locs).forEach(function(name) {
+        if (!isPlainObject(DB.locations[name])) DB.locations[name] = { hidden:false };
+        else if (DB.locations[name].hidden !== true) DB.locations[name].hidden = false;
+    });
+}
 
-    if (Array.isArray(r.dests)) r.dests.forEach(addLoc);
-    if (Array.isArray(r.stops)) r.stops.forEach(addLoc);
-});
+function escapeHtml(v) {
+    return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
 
-var h = [];
-Object.keys(locs).sort().forEach(function(l) {
-    h.push('<option value="', l.replace(/&/g, '&amp;').replace(/"/g, '&quot;'), '">');
-});
-find('location-options').innerHTML = h.join('');
+function locationUsage(name) {
+    var count = 0;
+    function hit(v) { if (asText(v) === name) count++; }
+    Object.keys(DB.km).forEach(function(k) {
+        var p = k.split('-'); if (p[0] === name || p.slice(1).join('-') === name) count++;
+    });
+    Object.keys(DB.price).forEach(function(k) {
+        var p = k.split('-'); if (p[0] === name || p.slice(1).join('-') === name) count++;
+    });
+    DB.logs.concat(DB.trash).forEach(function(r) {
+        hit(r.start); hit(r.from); hit(r.end); hit(r.to);
+        if (Array.isArray(r.dests)) r.dests.forEach(hit);
+        if (Array.isArray(r.stops)) r.stops.forEach(hit);
+    });
+    return count;
+}
+
+function renderLocationDatalist() {
+    ensureLocationRegistry();
+    var h = [];
+    Object.keys(collectAllLocations()).sort().forEach(function(l) {
+        var meta = DB.locations[l] || {};
+        if (meta.hidden === true) return;
+        h.push('<option value="', escapeHtml(l), '">');
+    });
+    find('location-options').innerHTML = h.join('');
+}
+
+function renderLocationManagement() {
+    ensureLocationRegistry();
+    var area = find('locationListArea');
+    if (!area) return;
+    var q = asText(find('location-search') && find('location-search').value).toLowerCase();
+    var names = Object.keys(collectAllLocations()).sort(function(a,b){ return a.localeCompare(b, 'zh-Hant'); });
+    var h = [];
+    names.forEach(function(name) {
+        var meta = DB.locations[name] || {};
+        var hidden = meta.hidden === true;
+        if (q && name.toLowerCase().indexOf(q) === -1) return;
+        var uses = locationUsage(name);
+        var encoded = encodeURIComponent(name);
+        h.push('<div class="list-item" style="align-items:flex-start; gap:10px;">',
+            '<div style="min-width:0; flex:1;"><div style="font-weight:800; word-break:break-all;">', escapeHtml(name), '</div>',
+            '<div style="font-size:12px;color:#718096;margin-top:4px;">使用 ', uses, ' 次', hidden ? ' · 已隱藏自動完成' : ' · 顯示於自動完成', '</div></div>',
+            '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">',
+            '<button type="button" class="btn-sm" style="background:var(--primary);" onclick="editLocation(decodeURIComponent(\'', encoded, '\'))">編輯</button>',
+            (hidden
+                ? '<button type="button" class="btn-sm" style="background:#718096;color:#fff;" onclick="toggleLocationHidden(decodeURIComponent(\''+encoded+'\'))">顯示</button>'
+                : '<button type="button" class="btn-sm" style="background:#e67e22;color:#fff;" onclick="toggleLocationHidden(decodeURIComponent(\''+encoded+'\'))">隱藏</button>'),
+            '<button type="button" class="btn-sm" style="background:var(--danger);color:#fff;" onclick="deleteLocation(decodeURIComponent(\'', encoded, '\'))">刪除</button>',
+            '</div></div>');
+    });
+    area.innerHTML = h.join('') || '<p style="text-align:center;color:#a0aec0;padding:20px;">找不到符合的地點</p>';
+}
+
+function updateUI() {
+    find('trash-count').innerText = DB.trash.length;
+    renderHistory();
+    if (find('trashManagement') && find('trashManagement').style.display === 'block') renderTrash();
+    if (find('priceSettingsContainer')) renderSettings();
+    ensureLocationRegistry();
+    renderLocationDatalist();
+    if (find('locationManagement') && find('locationManagement').style.display === 'block') renderLocationManagement();
 }
 
 var watch = ['ton', 'start', 'dest1', 'isRoundTrip', 'isSlightOverweight'];
@@ -617,6 +663,71 @@ h.push('<div class="list-item" style="background:#fdfdfd; border:1px dashed #edf
 find('priceListArea').innerHTML = h.join('') || '<p style="text-align:center; color:#a0aec0; padding:20px;">尚無自訂規則</p>';
 }
 
+function replaceLocationEverywhere(oldName, newName) {
+    function replaceKeyMap(map) {
+        var changes = [];
+        Object.keys(map).forEach(function(k) {
+            var p = k.split('-');
+            var a = p[0], b = p.slice(1).join('-');
+            if (a === oldName || b === oldName) {
+                var nk = (a === oldName ? newName : a) + '-' + (b === oldName ? newName : b);
+                changes.push({oldKey:k, newKey:nk, value:map[k]});
+            }
+        });
+        changes.forEach(function(c){
+            if (map[c.newKey] == null) map[c.newKey] = c.value;
+            else if (isPlainObject(map[c.newKey]) && isPlainObject(c.value)) Object.keys(c.value).forEach(function(t){ map[c.newKey][t] = c.value[t]; });
+            delete map[c.oldKey];
+        });
+    }
+    replaceKeyMap(DB.km); replaceKeyMap(DB.price);
+    function repl(v){ return asText(v) === oldName ? newName : v; }
+    DB.logs.concat(DB.trash).forEach(function(r){
+        r.start=repl(r.start); r.from=repl(r.from); r.end=repl(r.end); r.to=repl(r.to);
+        if (Array.isArray(r.dests)) r.dests=r.dests.map(repl);
+        if (Array.isArray(r.stops)) r.stops=r.stops.map(repl);
+    });
+}
+
+window.editLocation = function(oldName) {
+    var current = asText(oldName);
+    if (!current) return;
+    var next = window.prompt('修改地點名稱\n\n目前：' + current + '\n\n請輸入新的地點名稱：', current);
+    if (next === null) return;
+    next = asText(next);
+    if (!next) { alert('地點名稱不能為空'); return; }
+    if (next === current) return;
+    var locs = collectAllLocations();
+    if (locs[next]) { alert('「' + next + '」已經存在，請使用其他名稱。'); return; }
+    if (!confirm('確定將「' + current + '」修改為「' + next + '」嗎？\n\n這會同步更新里程規則、固定底價與歷史車趟中的地點名稱。')) return;
+    replaceLocationEverywhere(current, next);
+    var meta = DB.locations[current] || {hidden:false};
+    delete DB.locations[current];
+    DB.locations[next] = meta;
+    if (commit()) alert('地點已修改為「' + next + '」');
+};
+
+window.toggleLocationHidden = function(name) {
+    ensureLocationRegistry();
+    if (!DB.locations[name]) DB.locations[name] = {hidden:false};
+    DB.locations[name].hidden = DB.locations[name].hidden !== true;
+    if (commit()) renderLocationManagement();
+};
+
+window.deleteLocation = function(name) {
+    ensureLocationRegistry();
+    var uses = locationUsage(name);
+    if (uses > 0) {
+        if (!confirm('「' + name + '」目前仍被使用 ' + uses + ' 次。\n\n為避免破壞既有車趟與計價規則，刪除會改為「隱藏」，不再出現在輸入候選清單。\n\n確定隱藏嗎？')) return;
+        if (!DB.locations[name]) DB.locations[name] = {hidden:false};
+        DB.locations[name].hidden = true;
+    } else {
+        if (!confirm('確定要永久刪除「' + name + '」這個地點嗎？\n\n此地點沒有被目前資料使用。')) return;
+        delete DB.locations[name];
+    }
+    if (commit()) renderLocationManagement();
+};
+
 function togglePanel(id) {
 var p = find(id); p.style.display = (p.style.display === 'block' ? 'none' : 'block'); updateUI();
 }
@@ -706,86 +817,55 @@ if (act === 'trash') { for(var i=0; i<DB.logs.length; i++) { if(DB.logs[i].id===
 if (act === 'back') { for(var j=0; j<DB.trash.length; j++) { if(DB.trash[j].id===id) { var restored = DB.trash.splice(j,1)[0]; restored.updatedAt = new Date().toISOString(); DB.logs.push(restored); break; } } }
 commit();
 };
-var editingTripId = null;
-function getTripById(id) {
+window.editAmount = function(id) {
+    var record = null;
+
     for (var i = 0; i < DB.logs.length; i++) {
-        if (String(DB.logs[i].id) === String(id)) return DB.logs[i];
+        if (String(DB.logs[i].id) === String(id)) {
+            record = DB.logs[i];
+            break;
+        }
     }
-    return null;
-}
-function editStopRow(value) {
-    var row = document.createElement('div');
-    row.className = 'trip-edit-stop';
-    row.innerHTML = '<input type="text" class="edit-stop-input" list="location-options" placeholder="停靠點">' +
-        '<button type="button" aria-label="移除停靠點" onclick="this.parentElement.remove()">×</button>';
-    row.querySelector('input').value = value || '';
-    find('edit-stops').appendChild(row);
-}
-function addEditStop() { editStopRow(''); }
-function closeTripEditor() {
-    var el = find('tripEditOverlay');
-    if (el) { el.style.display = 'none'; el.setAttribute('aria-hidden','true'); }
-    editingTripId = null;
-}
-function openTripEditor(id) {
-    var r = getTripById(id);
-    if (!r) { alert('找不到這筆車趟資料'); return; }
-    editingTripId = r.id;
-    find('edit-date').value = r.date || '';
-    find('edit-ton').value = r.ton || r.truckType || '1.5';
-    find('edit-start').value = r.start || r.from || '';
-    var dests = Array.isArray(r.dests) ? r.dests.slice() : [];
-    if (!dests.length && (r.end || r.to)) dests = [r.end || r.to];
-    find('edit-dest').value = dests.shift() || '';
-    find('edit-stops').innerHTML = '';
-    dests.forEach(function(v){ editStopRow(v); });
-    find('edit-round').checked = !!r.isRoundTrip;
-    find('edit-overweight').checked = !!(r.isSlightOverweight !== undefined ? r.isSlightOverweight : r.isOverWeight);
-    var km = Number(r.distance != null ? r.distance : r.manualKm);
-    find('edit-km').value = isFinite(km) && km > 0 ? km : '';
-    var bp = Number(r.basePrice);
-    find('edit-base-price').value = isFinite(bp) && bp > 0 ? bp : '';
-    var gross = Number(r.gross != null ? r.gross : r.totalPrice);
-    find('edit-gross').value = isFinite(gross) && gross >= 0 ? gross : 0;
-    find('edit-completed').checked = !!(r.isCompleted !== undefined ? r.isCompleted : r.completed);
-    find('edit-completed-label').innerText = find('edit-completed').checked ? '已完成' : '未完成';
-    find('edit-completed').onchange = function(){ find('edit-completed-label').innerText = this.checked ? '已完成' : '未完成'; };
-    var overlay = find('tripEditOverlay');
-    overlay.style.display = 'flex'; overlay.setAttribute('aria-hidden','false');
-}
-window.editAmount = function(id) { openTripEditor(id); };
-function saveTripEditor() {
-    var r = getTripById(editingTripId);
-    if (!r) { alert('找不到這筆車趟資料'); return; }
-    var date = find('edit-date').value;
-    var ton = find('edit-ton').value;
-    var start = find('edit-start').value.trim();
-    var dest = find('edit-dest').value.trim();
-    var stops = [];
-    document.querySelectorAll('#edit-stops .edit-stop-input').forEach(function(el){ var v=el.value.trim(); if(v) stops.push(v); });
-    var gross = Number(find('edit-gross').value);
-    var km = Number(find('edit-km').value);
-    var basePrice = Number(find('edit-base-price').value);
-    if (!date || !start || !dest) { alert('日期、起點、終點不能空白'); return; }
-    if (!isFinite(gross) || gross < 0) { alert('業績金額請輸入有效數字'); return; }
-    if (!isFinite(km) || km < 0) km = 0;
-    if (!isFinite(basePrice) || basePrice < 0) basePrice = 0;
-    if (!confirm('確定儲存這筆歷史車趟的全部修改？\n\n' + start + ' → ' + [dest].concat(stops).join(' → ') + '\n' + ton + ' 噸\nNT$ ' + gross.toLocaleString())) return;
-    r.date = date;
-    r.ton = ton; r.truckType = ton;
-    r.start = start; r.from = start;
-    r.dests = [dest].concat(stops); r.to = dest; r.end = dest; r.stops = stops;
-    r.isRoundTrip = !!find('edit-round').checked;
-    r.isSlightOverweight = !!find('edit-overweight').checked;
-    r.isOverWeight = r.isSlightOverweight;
-    r.distance = km; r.manualKm = km; r.basePrice = basePrice;
-    r.gross = gross; r.totalPrice = gross; r.total = gross;
-    r.isCompleted = !!find('edit-completed').checked; r.completed = r.isCompleted;
-    r.updatedAt = new Date().toISOString();
+
+    if (!record) {
+        alert("找不到這筆業績資料");
+        return;
+    }
+
+    var currentAmount = Number(record.gross);
+    if (!isFinite(currentAmount) || currentAmount < 0) currentAmount = 0;
+
+    var input = window.prompt(
+        "修改這筆車趟的業績金額\n\n目前金額：NT " +
+        currentAmount.toLocaleString() +
+        " 元\n\n請輸入新的金額：",
+        String(currentAmount)
+    );
+
+    if (input === null) return;
+
+    input = String(input).replace(/,/g, "").trim();
+
+    if (input === "" || !isFinite(Number(input))) {
+        alert("請輸入有效的金額");
+        return;
+    }
+
+    var newAmount = Number(input);
+
+    if (newAmount < 0) {
+        alert("金額不能小於 0");
+        return;
+    }
+
+    record.gross = newAmount;
+    record.totalPrice = newAmount;
+    record.updatedAt = new Date().toISOString();
+
     if (!commit()) return;
-    closeTripEditor();
-    alert('車趟資料已完整更新');
-}
+
+    alert("業績金額已更新為 NT " + newAmount.toLocaleString() + " 元");
+};
 
 function migrationNormalizeRecord(o) {
     if (!o || typeof o !== 'object') return null;
