@@ -891,7 +891,9 @@ window.editAmount = function(id) {
 
             '<div class="trip-edit-field">' +
               '<label for="edit-trip-amount">💰 業績金額</label>' +
+              '<div id="edit-trip-auto-price" class="trip-edit-auto-price">依目前計價規則計算中…</div>' +
               '<div class="trip-edit-money"><span>NT$</span><input id="edit-trip-amount" type="number" min="0" step="1" inputmode="numeric"></div>' +
+              '<div class="trip-edit-hint">更改地點、車型、停靠點或加價選項時會自動重新計價；你仍可直接修改上面的金額。</div>' +
             '</div>' +
 
             '<div class="trip-edit-field">' +
@@ -940,6 +942,9 @@ window.editAmount = function(id) {
 .trip-edit-money{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #e2e8f0;border-radius:13px;padding:0 13px}
 .trip-edit-money span{font-size:18px;font-weight:900;color:#475569}
 .trip-edit-money input{border:0!important;padding-left:0!important;box-shadow:none!important}
+.trip-edit-auto-price{font-size:13px;color:#64748b;margin:-2px 0 7px;font-weight:800}
+.trip-edit-auto-price.is-auto{color:#2f855a}
+.trip-edit-auto-price.is-manual{color:#b7791f}
 .trip-edit-complete{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e2e8f0;border-radius:13px;padding:12px 14px;font-weight:900;color:#475569}
 .trip-edit-complete input{width:23px!important;height:23px!important;min-height:0!important}
 .trip-edit-footer{display:grid;grid-template-columns:1fr 1.5fr;gap:10px;padding:12px 18px max(12px,env(safe-area-inset-bottom));background:#fff;border-top:1px solid #edf2f7}
@@ -960,6 +965,9 @@ window.editAmount = function(id) {
     var completedInput = document.getElementById("edit-trip-completed");
     var completedText = document.getElementById("edit-trip-completed-text");
     var stopsBox = document.getElementById("edit-trip-stops");
+    var autoPriceBox = document.getElementById("edit-trip-auto-price");
+    var autoPriceTimer = null;
+    var amountManuallyEdited = false;
 
     dateInput.value = record.date || "";
     tonInput.value = String(record.ton || record.truckType || "1.5");
@@ -969,6 +977,79 @@ window.editAmount = function(id) {
     roundInput.checked = !!record.isRoundTrip;
     overweightInput.checked = !!(record.isSlightOverweight || record.isOverWeight);
     completedInput.checked = !!(record.isCompleted || record.completed);
+
+    /* 編輯時沿用主畫面的計價規則。
+       路線／車型／停靠點／加價選項一變，就直接把業績金額重算；
+       使用者仍可最後手動改金額，不會被儲存流程覆蓋。 */
+    function calculateEditAmount(updateInput) {
+        var s = startInput.value.trim();
+        var d = document.getElementById("edit-trip-dest-0").value.trim();
+        var t = tonInput.value;
+        var key = s + '-' + d;
+        var reverseKey = d + '-' + s;
+        var base = 0;
+        var mode = '';
+
+        if (s && d && DB.price[key] && DB.price[key][t]) {
+            base = parseInt(DB.price[key][t], 10) || 0;
+            mode = '固定底價';
+        } else if (s && d && DB.price[reverseKey] && DB.price[reverseKey][t]) {
+            base = parseInt(DB.price[reverseKey][t], 10) || 0;
+            mode = '固定底價（反向規則）';
+        } else if (s && d) {
+            var km = DB.km[key] || DB.km[reverseKey] || 0;
+            km = parseFloat(km) || 0;
+            if (km > 0) {
+                var rate = (t === '1.5' ? (800 + km * 25) : (t === '3.5' ? (1000 + km * 30) : (600 + km * 20)));
+                base = Math.round(rate / 100) * 100;
+                mode = '里程計價';
+            }
+        }
+
+        var stopCount = Array.prototype.filter.call(
+            stopsBox.querySelectorAll('input'),
+            function(input){ return input.value.trim() !== ''; }
+        ).length;
+
+        var total = base;
+        if (base > 0) {
+            if (roundInput.checked) total += Math.round(base * 0.5);
+            total += stopCount * 200;
+            if (overweightInput.checked) total += 300;
+        }
+
+        if (base > 0) {
+            autoPriceBox.textContent = '依目前規則：' + mode + ' → NT$ ' + total.toLocaleString('zh-TW');
+            autoPriceBox.className = 'trip-edit-auto-price is-auto';
+            if (updateInput && !amountManuallyEdited) amountInput.value = String(total);
+            return total;
+        }
+
+        autoPriceBox.textContent = s && d ? '目前沒有可套用的計價規則，保留原金額，可直接手動修改。' : '請先選擇完整起點與終點。';
+        autoPriceBox.className = 'trip-edit-auto-price is-manual';
+        return null;
+    }
+
+    function scheduleEditReprice() {
+        clearTimeout(autoPriceTimer);
+        amountManuallyEdited = false;
+        autoPriceTimer = setTimeout(function(){ calculateEditAmount(true); }, 120);
+    }
+
+    function bindReprice(el) {
+        if (!el) return;
+        el.addEventListener('input', scheduleEditReprice);
+        el.addEventListener('change', scheduleEditReprice);
+    }
+
+    amountInput.addEventListener('input', function(){ amountManuallyEdited = true; });
+    amountInput.addEventListener('change', function(){ amountManuallyEdited = true; });
+    bindReprice(startInput);
+    bindReprice(document.getElementById('edit-trip-dest-0'));
+    bindReprice(tonInput);
+    bindReprice(roundInput);
+    bindReprice(overweightInput);
+    calculateEditAmount(false);
 
     function updateCompletedText() {
         completedText.textContent = completedInput.checked ? "已完成" : "未完成";
@@ -989,9 +1070,11 @@ window.editAmount = function(id) {
                 '<button type="button" class="trip-edit-remove-stop" aria-label="刪除停靠點">×</button>';
             var input = row.querySelector("input");
             input.value = value || "";
+            bindReprice(input);
             row.querySelector("button").addEventListener("click", function() {
                 stopValues.splice(index, 1);
                 renderEditStops();
+                scheduleEditReprice();
             });
             stopsBox.appendChild(row);
         });
@@ -1001,6 +1084,7 @@ window.editAmount = function(id) {
 
     /* 既有資料若有多個終點，第二個以後視為停靠點。 */
     document.getElementById("edit-trip-dest-0").value = currentDests[0] || "";
+    calculateEditAmount(false);
 
     document.getElementById("edit-trip-add-stop").addEventListener("click", function() {
         var inputs = stopsBox.querySelectorAll("input");
@@ -1009,6 +1093,7 @@ window.editAmount = function(id) {
         });
         stopValues.push("");
         renderEditStops();
+        scheduleEditReprice();
         setTimeout(function() {
             var last = stopsBox.querySelectorAll("input");
             if (last.length) last[last.length - 1].focus();
