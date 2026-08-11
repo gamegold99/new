@@ -182,12 +182,24 @@ button[onclick*="'kill'"] { display: none; }
       <p style="margin:0 0 12px; color:#718096; font-size:14px; line-height:1.6;">
         正式使用時建議定期做完整 JSON 備份。匯入功能僅作資料恢復／搬家使用。
       </p>
+      <div style="font-weight:800;color:#4a5568;margin:2px 0 8px;">📱 本機資料備份</div>
       <button class="btn" style="background:#718096;color:#fff;" onclick="exportMigrationBackup()">📦 匯出完整 JSON 備份</button>
       <button class="btn" style="background:#5b6b7a;color:#fff;" onclick="document.getElementById('migration-file').click()">📥 匯入 JSON 資料</button>
       <input id="migration-file" type="file" accept="application/json,.json" style="display:none" onchange="importMigrationBackup(this)">
       <button class="btn" style="background:#4a5568;color:#fff;" onclick="exportRawStorageNoCommit()">🔎 安全匯出原始資料</button>
-      <div style="font-size:13px;color:#718096;text-align:center;margin-top:8px;">
-        匯入會與目前資料合併；安全匯出只讀取資料，不會修改或覆寫。
+
+      <div style="border-top:1px solid #e2e8f0;margin:14px 0 12px;padding-top:12px;">
+        <div style="font-weight:800;color:#4a5568;margin-bottom:6px;">☁️ 雲端備份</div>
+        <div style="font-size:13px;color:#718096;line-height:1.6;margin-bottom:8px;">
+          平常同步以手機資料為主。雲端會保留歷史版本，方便誤刪時救援。
+        </div>
+        <button class="btn" style="background:#805ad5;color:#fff;" onclick="window.TripCloud && window.TripCloud.syncNow(true)">☁️ 立即備份到雲端</button>
+        <button class="btn" style="background:#6b46c1;color:#fff;" onclick="window.TripCloud && window.TripCloud.openRestore()">🕘 查看雲端歷史／還原</button>
+        <div id="cloudRestoreArea" style="display:none; margin-top:12px;"></div>
+      </div>
+
+      <div style="font-size:13px;color:#718096;text-align:center;margin-top:8px;line-height:1.6;">
+        一般同步不會用雲端覆蓋手機；只有你明確選擇「雲端歷史／還原」時，才會把指定版本寫回手機。
       </div>
     </div>
   </div>

@@ -10,6 +10,7 @@
   var syncing = false;
   var syncTimer = null;
   var applyingRemote = false;
+  var HISTORY_LIMIT = 30;
 
   function status(message, isError) {
     var el = document.getElementById('cloud-status');
@@ -74,7 +75,7 @@
 
   function buildSnapshot() {
     return {
-      version: 3,
+      version: 4,
       logs: clone(DB.logs, []),
       trash: clone(DB.trash, []),
       km: clone(DB.km, {}),
@@ -82,6 +83,46 @@
       savedAt: new Date().toISOString(),
       source: 'local-first'
     };
+  }
+
+  function snapshotForHistory(snapshot) {
+    var copy = clone(snapshot, null);
+    if (!copy) return null;
+    delete copy.history;
+    return copy;
+  }
+
+  function getHistory(remoteData) {
+    return remoteData && Array.isArray(remoteData.history) ? remoteData.history : [];
+  }
+
+  function withHistory(snapshot, remoteData) {
+    var history = getHistory(remoteData);
+    var previous = snapshotForHistory(remoteData);
+    if (previous && validSnapshot(previous)) {
+      history.push({
+        savedAt: previous.savedAt || new Date().toISOString(),
+        logs: clone(previous.logs, []),
+        trash: clone(previous.trash, []),
+        km: clone(previous.km, {}),
+        price: clone(previous.price, {}),
+        version: previous.version || 1,
+        source: previous.source || 'cloud'
+      });
+    }
+    var unique = [];
+    var seen = {};
+    history.slice().reverse().forEach(function (item) {
+      var stamp = String(item && item.savedAt || '');
+      var key = stamp + '|' + JSON.stringify([
+        item && item.logs || [],
+        item && item.trash || []
+      ]);
+      if (!seen[key]) { seen[key] = true; unique.push(item); }
+    });
+    unique = unique.slice(0, HISTORY_LIMIT).reverse();
+    snapshot.history = unique;
+    return snapshot;
   }
 
   function validSnapshot(value) {
@@ -143,9 +184,21 @@
       } finally { applyingRemote = false; }
     }
 
+    var remote = await client
+      .from('trip_sync_state')
+      .select('data, updated_at')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (remote.error) throw remote.error;
+
+    var nextSnapshot = buildSnapshot();
+    if (remote.data && remote.data.data && validSnapshot(remote.data.data)) {
+      nextSnapshot = withHistory(nextSnapshot, remote.data.data);
+    }
+
     var upload = await client.from('trip_sync_state').upsert({
       user_id: user.id,
-      data: buildSnapshot(),
+      data: nextSnapshot,
       updated_at: new Date().toISOString()
     }, { onConflict: 'user_id' });
 
@@ -223,6 +276,85 @@
     }
   }
 
+  function renderRestoreList(history) {
+    var area = document.getElementById('cloudRestoreArea');
+    if (!area) return;
+    if (!history.length) {
+      area.innerHTML = '<div style="padding:12px;background:#f7fafc;border-radius:10px;color:#718096;text-align:center;">目前沒有可還原的雲端歷史版本。</div>';
+      area.style.display = 'block';
+      return;
+    }
+    var html = '<div style="background:#f7fafc;border-radius:10px;padding:10px;">' +
+      '<div style="font-weight:800;color:#4a5568;margin-bottom:8px;">選擇要還原的雲端版本</div>' +
+      '<div style="font-size:13px;color:#718096;margin-bottom:10px;">只會在你按下「還原」後寫入手機；目前手機資料會先保留在雲端歷史版本。</div>';
+    history.slice().reverse().forEach(function (item) {
+      var stamp = item && item.savedAt ? new Date(item.savedAt) : null;
+      var label = stamp && !isNaN(stamp.getTime()) ? stamp.toLocaleString('zh-TW', { hour12:false }) : '未知時間';
+      var restoreIndex = history.indexOf(item);
+      var logs = Array.isArray(item && item.logs) ? item.logs.length : 0;
+      var trash = Array.isArray(item && item.trash) ? item.trash.length : 0;
+      html += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin-top:8px;">' +
+        '<div style="font-weight:700;color:#2d3748;">☁️ ' + label + '</div>' +
+        '<div style="font-size:13px;color:#718096;margin:5px 0 8px;">歷史：' + logs + ' 筆　回收桶：' + trash + ' 筆</div>' +
+        '<button type="button" class="btn-sm" style="background:#805ad5;color:#fff;width:100%;" onclick="window.TripCloud.restoreHistory(' + restoreIndex + ')">還原這個版本</button>' +
+        '</div>';
+    });
+    html += '<button type="button" class="btn-outline" style="margin-top:10px;width:100%;" onclick="document.getElementById(\'cloudRestoreArea\').style.display=\'none\'">關閉</button></div>';
+    area.innerHTML = html;
+    area.style.display = 'block';
+  }
+
+  var restoreHistoryCache = [];
+
+  async function openRestore() {
+    var user;
+    try { user = await currentUser(); } catch (e) { status('無法確認登入狀態', true); return; }
+    if (!user) { status('請先登入才能使用雲端還原', true); return; }
+    status('正在讀取雲端歷史版本…');
+    try {
+      var remote = await client.from('trip_sync_state').select('data').eq('user_id', user.id).maybeSingle();
+      if (remote.error) throw remote.error;
+      restoreHistoryCache = getHistory(remote.data && remote.data.data);
+      renderRestoreList(restoreHistoryCache);
+      status('已載入雲端歷史版本');
+    } catch (error) {
+      status('讀取雲端歷史失敗：' + (error.message || '請稍後再試'), true);
+    }
+  }
+
+  async function restoreHistory(index) {
+    var item = restoreHistoryCache[index];
+    if (!validSnapshot(item)) { status('這個雲端版本資料不完整', true); return; }
+    var logs = Array.isArray(item.logs) ? item.logs.length : 0;
+    var trash = Array.isArray(item.trash) ? item.trash.length : 0;
+    if (!confirm('確定要還原這個雲端版本嗎？\n\n目前手機資料會被這個版本取代。\n歷史版本仍會保留在雲端。\n\n車趟：' + logs + ' 筆\n回收桶：' + trash + ' 筆')) return;
+
+    var user;
+    try { user = await currentUser(); } catch (e) { status('無法確認登入狀態', true); return; }
+    if (!user) { status('請先登入', true); return; }
+
+    try {
+      status('正在還原…');
+      applyingRemote = true;
+      DB.logs = clone(item.logs, []);
+      DB.trash = clone(item.trash, []);
+      DB.km = clone(item.km, {});
+      DB.price = clone(item.price, {});
+      if (originalCommit() === false) throw new Error('手機資料儲存失敗');
+      applyingRemote = false;
+      markInitialized();
+      await uploadLocal(user);
+      if (typeof updateUI === 'function') updateUI();
+      var area = document.getElementById('cloudRestoreArea');
+      if (area) area.style.display = 'none';
+      status('雲端版本已還原');
+      alert('雲端資料已還原到手機。');
+    } catch (error) {
+      applyingRemote = false;
+      status('還原失敗：' + (error.message || '請稍後再試'), true);
+    }
+  }
+
   async function sendOtp() {
     var input = document.getElementById('cloud-email');
     var email = input ? input.value.trim() : '';
@@ -265,7 +397,9 @@
   window.TripCloud = {
     sendOtp: sendOtp,
     signOut: signOut,
-    syncNow: syncNow
+    syncNow: syncNow,
+    openRestore: openRestore,
+    restoreHistory: restoreHistory
   };
 
   client.auth.getUser().then(function (result) {
