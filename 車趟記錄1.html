@@ -828,43 +828,121 @@ window.editAmount = function(id) {
     }
 
     if (!record) {
-        alert("找不到這筆業績資料");
+        alert("找不到這筆車趟資料");
         return;
     }
 
-    var currentAmount = Number(record.gross);
+    var currentDate = record.date || "";
+    var currentTon = record.ton || record.truckType || "1.5噸";
+    var currentStart = record.start || record.from || "";
+    var currentDests = Array.isArray(record.dests)
+        ? record.dests.slice()
+        : (record.to ? [record.to].concat(Array.isArray(record.stops) ? record.stops : []) : []);
+    var currentAmount = Number(record.gross != null ? record.gross : record.totalPrice);
     if (!isFinite(currentAmount) || currentAmount < 0) currentAmount = 0;
 
-    var input = window.prompt(
-        "修改這筆車趟的業績金額\n\n目前金額：NT " +
-        currentAmount.toLocaleString() +
+    var nextDate = window.prompt(
+        "修改車趟日期\n\n目前：" + currentDate + "\n\n請輸入日期（YYYY-MM-DD）：",
+        currentDate
+    );
+    if (nextDate === null) return;
+    nextDate = String(nextDate).trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(nextDate)) {
+        alert("日期格式錯誤，請使用 YYYY-MM-DD，例如 2026-08-11");
+        return;
+    }
+
+    var nextTon = window.prompt(
+        "修改車型噸數\n\n目前：" + currentTon + "\n\n可輸入：0.7噸、1.5噸、3.5噸",
+        currentTon
+    );
+    if (nextTon === null) return;
+    nextTon = String(nextTon).trim();
+    if (["0.7噸", "1.5噸", "3.5噸"].indexOf(nextTon) === -1) {
+        alert("車型請輸入：0.7噸、1.5噸或 3.5噸");
+        return;
+    }
+
+    var nextStart = window.prompt(
+        "修改起點\n\n目前：" + currentStart + "\n\n請輸入新的起點：",
+        currentStart
+    );
+    if (nextStart === null) return;
+    nextStart = String(nextStart).trim();
+    if (!nextStart) {
+        alert("起點不能空白");
+        return;
+    }
+
+    var nextRoute = window.prompt(
+        "修改終點／停靠點\n\n目前：" + (currentDests.length ? currentDests.join(" → ") : "（無）") +
+        "\n\n請依照順序輸入，使用「、」分隔。\n例如：土城區、土城區、板橋區",
+        currentDests.join("、")
+    );
+    if (nextRoute === null) return;
+    var nextDests = String(nextRoute)
+        .split(/[、,，>＞→]+/)
+        .map(function(v){ return String(v || '').trim(); })
+        .filter(Boolean);
+    if (!nextDests.length) {
+        alert("至少要有一個終點／停靠點");
+        return;
+    }
+
+    var nextAmountInput = window.prompt(
+        "修改這筆車趟的業績金額\n\n目前金額：NT " + currentAmount.toLocaleString() +
         " 元\n\n請輸入新的金額：",
         String(currentAmount)
     );
-
-    if (input === null) return;
-
-    input = String(input).replace(/,/g, "").trim();
-
-    if (input === "" || !isFinite(Number(input))) {
+    if (nextAmountInput === null) return;
+    nextAmountInput = String(nextAmountInput).replace(/,/g, "").trim();
+    if (nextAmountInput === "" || !isFinite(Number(nextAmountInput))) {
         alert("請輸入有效的金額");
         return;
     }
-
-    var newAmount = Number(input);
-
-    if (newAmount < 0) {
+    var nextAmount = Number(nextAmountInput);
+    if (nextAmount < 0) {
         alert("金額不能小於 0");
         return;
     }
 
-    record.gross = newAmount;
-    record.totalPrice = newAmount;
+    var nextRound = window.confirm(
+        "是否為來回？\n\n目前：" + (record.isRoundTrip ? "是" : "否") +
+        "\n\n按「確定」= 來回\n按「取消」= 單趟"
+    );
+
+    var nextOverweight = window.confirm(
+        "是否小超重？\n\n目前：" + (record.isSlightOverweight || record.isOverWeight ? "是" : "否") +
+        "\n\n按「確定」= 小超重\n按「取消」= 一般"
+    );
+
+    var nextCompleted = window.confirm(
+        "是否標記為已完成？\n\n目前：" + (record.isCompleted || record.completed ? "已完成" : "未完成") +
+        "\n\n按「確定」= 已完成\n按「取消」= 未完成"
+    );
+
+    record.date = nextDate;
+    record.ton = nextTon;
+    record.truckType = nextTon;
+    record.start = nextStart;
+    record.from = nextStart;
+    record.to = nextDests[0];
+    record.stops = nextDests.slice(1);
+    record.dests = nextDests;
+    record.gross = nextAmount;
+    record.totalPrice = nextAmount;
+    record.isRoundTrip = nextRound;
+    record.isSlightOverweight = nextOverweight;
+    record.isOverWeight = nextOverweight;
+    record.isCompleted = nextCompleted;
+    record.completed = nextCompleted;
     record.updatedAt = new Date().toISOString();
 
     if (!commit()) return;
 
-    alert("業績金額已更新為 NT " + newAmount.toLocaleString() + " 元");
+    updateUI();
+    alert("車趟資料已完整更新。\n\n" + nextStart + " → " + nextDests.join(" → ") +
+        "\nNT$ " + nextAmount.toLocaleString() + " 元");
 };
 
 function migrationNormalizeRecord(o) {
