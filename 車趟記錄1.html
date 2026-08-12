@@ -238,6 +238,104 @@ h2 {
 }
 </style>
 
+
+<style id="ui-optimization-v12">
+/* Mobile First UI v12
+   精準鎖定「雲端同步卡片後面的第一張車趟輸入卡」。
+   設定管理、計價規則、地點管理、備份、歷史業績等區塊完全不碰。
+*/
+@media (max-width: 600px) {
+  /* ===== 車趟主要輸入卡 ===== */
+  #cloud-sync-card + .card {
+    padding: 12px 14px !important;
+    margin-bottom: 10px !important;
+  }
+
+  #cloud-sync-card + .card .form-group {
+    margin-bottom: 7px !important;
+  }
+
+  #cloud-sync-card + .card .form-group label {
+    margin-bottom: 3px !important;
+    line-height: 1.2 !important;
+  }
+
+  #cloud-sync-card + .card .form-group input,
+  #cloud-sync-card + .card .form-group select {
+    height: 40px !important;
+    min-height: 40px !important;
+    padding: 7px 10px !important;
+  }
+
+  /* 運輸路線標題與停靠點 */
+  #cloud-sync-card + .card #extra-dests-container .form-group {
+    margin-bottom: 6px !important;
+  }
+
+  #cloud-sync-card + .card #addStopBtn {
+    min-height: 40px !important;
+    padding: 7px 10px !important;
+    margin: 3px 0 7px !important;
+  }
+
+  /* ===== 來回／小超重：由大型卡片縮成緊湊操作列 ===== */
+  #cloud-sync-card + .card .checkbox-group {
+    min-height: 44px !important;
+    height: 44px !important;
+    box-sizing: border-box !important;
+    padding: 7px 10px !important;
+    margin: 4px 0 !important;
+    gap: 8px !important;
+    border-radius: 11px !important;
+  }
+
+  #cloud-sync-card + .card .checkbox-group input {
+    width: 20px !important;
+    height: 20px !important;
+    min-height: 20px !important;
+    flex: 0 0 20px !important;
+  }
+
+  #cloud-sync-card + .card .checkbox-group span {
+    font-size: 15px !important;
+    line-height: 1.15 !important;
+  }
+
+  /* ===== 計價結果：資訊密度提高，金額仍醒目 ===== */
+  #cloud-sync-card + .card .result-display {
+    padding: 10px 12px !important;
+    margin: 6px 0 !important;
+    border-radius: 12px !important;
+  }
+
+  #cloud-sync-card + .card .result-display p {
+    margin: 3px 0 !important;
+    font-size: 14px !important;
+    line-height: 1.25 !important;
+  }
+
+  #cloud-sync-card + .card .result-display hr {
+    margin: 5px 0 !important;
+  }
+
+  #cloud-sync-card + .card .result-display .net-total {
+    margin: 2px 0 0 !important;
+    font-size: 1.55rem !important;
+    line-height: 1 !important;
+  }
+
+  /* ===== 儲存按鈕：保留好按，但不再佔一大片 ===== */
+  #cloud-sync-card + .card .btn-save {
+    min-height: 46px !important;
+    height: 46px !important;
+    padding: 8px 12px !important;
+    margin: 5px 0 0 !important;
+    border-radius: 11px !important;
+    font-size: 16px !important;
+  }
+}
+</style>
+
 </head>
 <body>
 
