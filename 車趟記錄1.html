@@ -65,6 +65,20 @@ input:focus, select:focus { border-color: var(--accent); outline: none; box-shad
 datalist { display: none; }
 /* Legacy trash cards still contain this control in old markup; deletion is disabled. */
 button[onclick*="'kill'"] { display: none; }
+
+.edit-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.48);display:none;align-items:flex-start;justify-content:center;padding:18px;z-index:9999;overflow:auto;}
+.edit-modal{width:100%;max-width:600px;background:#fff;border-radius:18px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.25);margin:20px 0;}
+.edit-modal h3{margin:0 0 18px;color:var(--primary);text-align:center;}
+.edit-modal .edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.edit-modal .edit-full{grid-column:1/-1;}
+.edit-modal label{display:block;margin-bottom:7px;font-weight:700;color:#4a5568;}
+.edit-modal input,.edit-modal select{width:100%;padding:12px 14px;border:1.5px solid #dfe7ef;border-radius:12px;box-sizing:border-box;font-size:16px;background:#fff;}
+.edit-modal input[type=date]{min-height:48px;}
+.edit-dest-row .edit-dest-input{flex:1;}
+.edit-dest-row button:disabled{border-color:transparent!important;background:transparent!important;}
+.edit-modal .edit-actions{display:flex;gap:10px;margin-top:18px;}
+.edit-modal .edit-actions button{flex:1;}
+@media(max-width:520px){.edit-modal{padding:16px;margin:5px 0}
 </style>
 
 <style id="ui-optimization-v1">
@@ -787,7 +801,7 @@ var btns = isTrash ?
 (['<label class="checkbox-group" style="background:transparent; border:none; padding:0;"><input type="checkbox" ', (r.isCompleted?'checked':''), ' onchange="flip(', r.id, ')">',
 '<span class="status-pill ', (r.isCompleted?'pill-done':'pill-wait'), '">', (r.isCompleted?'已完成':'未完成'), '</span></label>',
 '<span style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">',
-'<button type="button" class="btn-sm" style="background:#fff; color:var(--primary); border:1px solid #cbd5e0;" onclick="window.editAmount(', r.id, ')">編輯</button>',
+'<button type="button" class="btn-sm" style="background:#fff; color:var(--primary); border:1px solid #cbd5e0;" onclick="window.editTrip(', r.id, ')">完整編輯</button>',
 '<button type="button" class="btn-sm" style="background:var(--danger); color:#fff;" onclick="window.move(', r.id, ',\'trash\')">刪除</button>',
 '</span>'].join(''));
 return ['<div class="log-item ', (isTrash?'is-trash':(r.isCompleted?'completed':'pending')), '">',
@@ -818,54 +832,163 @@ if (act === 'trash') { for(var i=0; i<DB.logs.length; i++) { if(DB.logs[i].id===
 if (act === 'back') { for(var j=0; j<DB.trash.length; j++) { if(DB.trash[j].id===id) { var restored = DB.trash.splice(j,1)[0]; restored.updatedAt = new Date().toISOString(); DB.logs.push(restored); break; } } }
 commit();
 };
-window.editAmount = function(id) {
-    var record = null;
+window._editingTripId = null;
+window.closeEditTrip = function(){
+    var m=document.getElementById('editTripModal');
+    if(m){m.style.display='none';m.setAttribute('aria-hidden','true');}
+    window._editingTripId=null;
+};
+window.renderEditDestinations = function(dests) {
+    var box = document.getElementById('edit-dests-container');
+    if(!box) return;
+    box.innerHTML='';
+    dests = Array.isArray(dests) ? dests.filter(function(x){return String(x).trim()!=='';}) : [];
+    if(!dests.length) dests=[''];
+    for(var i=0;i<dests.length;i++) addEditDestinationRow(dests[i], i===0);
+};
 
+window.addEditDestination = function(value) {
+    addEditDestinationRow(value || '', false);
+    var inputs=document.querySelectorAll('#edit-dests-container .edit-dest-input');
+    if(inputs.length) inputs[inputs.length-1].focus();
+};
+
+function addEditDestinationRow(value, isFirst) {
+    var box=document.getElementById('edit-dests-container');
+    if(!box) return;
+    var row=document.createElement('div');
+    row.className='edit-dest-row';
+    row.style.cssText='display:flex;gap:8px;align-items:center;margin-bottom:8px;';
+    var input=document.createElement('input');
+    input.type='text';
+    input.className='edit-dest-input';
+    input.placeholder=isFirst?'目的地':'新增停靠點';
+    input.setAttribute('list','location-options');
+    input.value=value || '';
+    input.oninput=function(){};
+    row.appendChild(input);
+    var btn=document.createElement('button');
+    btn.type='button';
+    btn.textContent=isFirst?'':'🗑';
+    btn.title=isFirst?'主要目的地不可刪除':'刪除此停靠點';
+    btn.disabled=!!isFirst;
+    btn.style.cssText=isFirst?'visibility:hidden;width:44px;height:44px;':'width:44px;height:44px;background:#fff;color:var(--danger);border:1.5px solid #fed7d7;border-radius:10px;cursor:pointer;font-size:16px;';
+    btn.onclick=function(){row.remove();};
+    row.appendChild(btn);
+    box.appendChild(row);
+}
+
+window.editTrip = function(id) {
+    var record = null;
     for (var i = 0; i < DB.logs.length; i++) {
-        if (String(DB.logs[i].id) === String(id)) {
-            record = DB.logs[i];
-            break;
+        if (String(DB.logs[i].id) === String(id)) { record = DB.logs[i]; break; }
+    }
+    if (!record) { alert('找不到這筆車趟資料'); return; }
+    window._editingTripId = id;
+    document.getElementById('edit-date').value = record.date || '';
+    document.getElementById('edit-ton').value = String(record.ton || record.truckType || '1.5');
+    document.getElementById('edit-start').value = record.start || record.from || '';
+    var editDests = Array.isArray(record.dests) ? record.dests : (record.to ? [record.to].concat(record.stops || []) : []);
+    renderEditDestinations(editDests);
+    document.getElementById('edit-amount').value = record.gross != null ? record.gross : (record.totalPrice || 0);
+    document.getElementById('edit-distance').value = record.distance != null ? record.distance : 0;
+    document.getElementById('edit-base-price').value = record.basePrice != null ? record.basePrice : 0;
+    document.getElementById('edit-round').checked = !!record.isRoundTrip;
+    document.getElementById('edit-overweight').checked = !!(record.isSlightOverweight || record.isOverWeight);
+    document.getElementById('edit-completed').checked = !!(record.isCompleted || record.completed);
+    var m=document.getElementById('editTripModal');
+    m.style.display='flex';m.setAttribute('aria-hidden','false');
+};
+window.saveEditTrip = function(){
+    var id=window._editingTripId, record=null;
+    for(var i=0;i<DB.logs.length;i++){if(String(DB.logs[i].id)===String(id)){record=DB.logs[i];break;}}
+    if(!record){alert('找不到這筆車趟資料');return;}
+    var date=document.getElementById('edit-date').value;
+    if(!date){alert('請選擇日期');return;}
+    var truck=document.getElementById('edit-ton').value;
+    var from=document.getElementById('edit-start').value.trim();
+    var destInputs=document.querySelectorAll('#edit-dests-container .edit-dest-input');
+    var dests=[];
+    for(var di=0;di<destInputs.length;di++){
+        var dv=destInputs[di].value.trim();
+        if(dv) dests.push(dv);
+    }
+    var amount=Number(document.getElementById('edit-amount').value);
+    var distance=Number(document.getElementById('edit-distance').value);
+    var basePrice=Number(document.getElementById('edit-base-price').value);
+    var newRound=document.getElementById('edit-round').checked;
+    var newOverweight=document.getElementById('edit-overweight').checked;
+    var oldRound=!!record.isRoundTrip;
+    var oldOverweight=!!(record.isSlightOverweight || record.isOverWeight);
+    var oldTon=String(record.ton || record.truckType || '');
+    var oldStart=String(record.start || record.from || '').trim();
+    var oldDests=Array.isArray(record.dests) ? record.dests.map(function(x){return String(x).trim();}).filter(Boolean) : [];
+    var oldDistance=Number(record.distance || 0);
+    var oldBasePrice=Number(record.basePrice || 0);
+    if(!from){alert('起點不能空白');return;}
+    if(!dests.length){alert('至少要有一個目的地');return;}
+    if(!isFinite(amount)||amount<0){alert('請輸入有效的金額');return;}
+    if(!isFinite(distance)||distance<0){alert('里程必須是 0 以上的數字');return;}
+    if(!isFinite(basePrice)||basePrice<0){alert('路線底價必須是 0 以上的數字');return;}
+
+    // 計價條件有變時，依目前正式系統的計價規則重新計算金額。
+    // 若只改日期、完成狀態或純金額，則保留使用者輸入的金額。
+    var pricingChanged =
+        oldRound !== newRound ||
+        oldOverweight !== newOverweight ||
+        oldTon !== String(truck) ||
+        oldStart !== from ||
+        oldDests.join('|') !== dests.join('|') ||
+        oldDistance !== distance ||
+        oldBasePrice !== basePrice;
+
+    var calculatedAmount = amount;
+    if (pricingChanged) {
+        var routeKey = from + '-' + dests[0];
+        var reverseKey = dests[0] + '-' + from;
+        var base = 0;
+
+        if (DB.price[routeKey] && DB.price[routeKey][truck]) {
+            base = Number(DB.price[routeKey][truck]);
+        } else if (DB.price[reverseKey] && DB.price[reverseKey][truck]) {
+            base = Number(DB.price[reverseKey][truck]);
+        }
+
+        if (!(base > 0) && distance > 0) {
+            var rate = (String(truck) === '1.5' ? (800 + distance * 25) :
+                        (String(truck) === '3.5' ? (1000 + distance * 30) :
+                        (600 + distance * 20)));
+            base = Math.round(rate / 100) * 100;
+        }
+
+        if (base > 0) {
+            calculatedAmount = base;
+            if (newRound) calculatedAmount += Math.round(base * 0.5);
+            calculatedAmount += Math.max(0, dests.length - 1) * 200;
+            if (newOverweight) calculatedAmount += 300;
+            calculatedAmount = Math.round(calculatedAmount);
         }
     }
 
-    if (!record) {
-        alert("找不到這筆業績資料");
-        return;
+    record.date=date;
+    record.ton=truck;record.truckType=truck;
+    record.start=from;record.from=from;
+    record.dests=dests;record.to=dests[0];record.stops=dests.slice(1);
+    record.gross=calculatedAmount;record.totalPrice=calculatedAmount;
+    record.distance=distance;record.basePrice=basePrice;
+    record.isRoundTrip=newRound;
+    record.isSlightOverweight=newOverweight;
+    record.isOverWeight=record.isSlightOverweight;
+    record.isCompleted=document.getElementById('edit-completed').checked;
+    record.completed=record.isCompleted;
+    record.updatedAt=new Date().toISOString();
+    if(!commit())return;
+    window.closeEditTrip();
+    if (pricingChanged && calculatedAmount !== amount) {
+        alert('這筆車趟已更新。\n因為計價條件有變，業績金額已自動重算為 NT ' + calculatedAmount.toLocaleString() + ' 元。');
+    } else {
+        alert('這筆車趟已完整更新。');
     }
-
-    var currentAmount = Number(record.gross);
-    if (!isFinite(currentAmount) || currentAmount < 0) currentAmount = 0;
-
-    var input = window.prompt(
-        "修改這筆車趟的業績金額\n\n目前金額：NT " +
-        currentAmount.toLocaleString() +
-        " 元\n\n請輸入新的金額：",
-        String(currentAmount)
-    );
-
-    if (input === null) return;
-
-    input = String(input).replace(/,/g, "").trim();
-
-    if (input === "" || !isFinite(Number(input))) {
-        alert("請輸入有效的金額");
-        return;
-    }
-
-    var newAmount = Number(input);
-
-    if (newAmount < 0) {
-        alert("金額不能小於 0");
-        return;
-    }
-
-    record.gross = newAmount;
-    record.totalPrice = newAmount;
-    record.updatedAt = new Date().toISOString();
-
-    if (!commit()) return;
-
-    alert("業績金額已更新為 NT " + newAmount.toLocaleString() + " 元");
 };
 
 function migrationNormalizeRecord(o) {
@@ -1458,5 +1581,32 @@ window.location.reload();
 });
 }
 </script>
+<div id="editTripModal" class="edit-modal-backdrop" aria-hidden="true">
+  <div class="edit-modal" role="dialog" aria-modal="true" aria-labelledby="editTripTitle">
+    <h3 id="editTripTitle">✏️ 編輯車趟</h3>
+    <div class="edit-grid">
+      <div><label for="edit-date">日期</label><input type="date" id="edit-date"></div>
+      <div><label for="edit-ton">車型</label><select id="edit-ton"><option value="1.5">1.5 噸</option><option value="3.5">3.5 噸</option><option value="0.7">0.7 噸</option></select></div>
+      <div class="edit-full"><label for="edit-start">起點</label><input type="text" id="edit-start" list="location-options"></div>
+      <div class="edit-full">
+        <label>目的地／停靠點</label>
+        <div id="edit-dests-container"></div>
+        <button type="button" class="btn-outline" style="margin-top:4px;" onclick="window.addEditDestination('')">＋ 新增停靠點</button>
+      </div>
+      <div><label for="edit-amount">業績金額（元）</label><input type="number" id="edit-amount" min="0" step="1" inputmode="numeric"></div>
+      <div><label for="edit-distance">里程（km）</label><input type="number" id="edit-distance" min="0" step="0.1" inputmode="decimal"></div>
+      <div><label for="edit-base-price">路線底價（元）</label><input type="number" id="edit-base-price" min="0" step="1" inputmode="numeric"></div>
+      <div class="edit-full">
+        <label><input type="checkbox" id="edit-round" style="width:auto;margin-right:8px;">來回（+50%）</label>
+        <label><input type="checkbox" id="edit-overweight" style="width:auto;margin-right:8px;">小超重（+300）</label>
+        <label><input type="checkbox" id="edit-completed" style="width:auto;margin-right:8px;">已完成</label>
+      </div>
+    </div>
+    <div class="edit-actions">
+      <button type="button" class="btn-outline" onclick="window.closeEditTrip()">取消</button>
+      <button type="button" class="btn btn-save" onclick="window.saveEditTrip()">儲存修改</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
