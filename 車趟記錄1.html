@@ -169,6 +169,75 @@ h2 {
 @media (max-width:600px){
 .container{padding-left:8px!important;padding-right:8px!important}.container>.card{margin-bottom:8px!important}.form-group{margin-bottom:8px!important}.form-group label{margin-bottom:3px!important;font-size:13px!important;line-height:1.25!important}.form-group input,.form-group select{min-height:40px!important;height:40px!important;padding:8px 10px!important;font-size:16px!important}#destContainer .form-group{margin-bottom:7px!important}#addStopBtn{margin-top:2px!important;margin-bottom:7px!important;padding:8px 10px!important;min-height:38px!important}.checkbox-group{margin-top:6px!important;margin-bottom:7px!important;gap:6px!important}.checkbox-group label{padding:8px 9px!important;font-size:14px!important}.result-display{padding:12px 14px!important;margin-top:7px!important}.result-display .net-total{font-size:1.8rem!important;line-height:1.1!important}#saveBtn,button[onclick*="saveTrip"],button[onclick*="saveData"]{min-height:44px!important;padding:10px 12px!important;margin-top:7px!important}}
 </style>
+
+<style id="ui-optimization-v11">
+/* Mobile First UI v11：只壓縮主要輸入／計價／儲存區；設定管理與歷史業績完全不動 */
+@media (max-width: 600px) {
+  /* 主要輸入卡片：減少整體上下留白 */
+  .container > .card:first-of-type {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+  }
+
+  /* 車型、路線等欄位 */
+  .container > .card:first-of-type .form-group {
+    margin-bottom: 6px !important;
+  }
+  .container > .card:first-of-type .form-group label {
+    margin-bottom: 2px !important;
+    line-height: 1.2 !important;
+  }
+  .container > .card:first-of-type input,
+  .container > .card:first-of-type select {
+    height: 38px !important;
+    min-height: 38px !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+  }
+
+  /* 新增停靠點 */
+  #addStopBtn {
+    min-height: 36px !important;
+    padding: 7px 10px !important;
+    margin-top: 2px !important;
+    margin-bottom: 5px !important;
+  }
+
+  /* 來回／小超重：縮成真正的操作選項，不再像兩張大卡 */
+  .checkbox-group {
+    gap: 6px !important;
+    margin: 5px 0 !important;
+  }
+  .checkbox-group label {
+    min-height: 42px !important;
+    padding: 7px 9px !important;
+    border-radius: 12px !important;
+  }
+
+  /* 計價結果：保留醒目程度，但降低卡片高度與金額字級 */
+  .result-display {
+    padding: 10px 13px !important;
+    margin-top: 5px !important;
+    margin-bottom: 6px !important;
+  }
+  .result-display hr {
+    margin: 6px 0 !important;
+  }
+  .result-display .net-total {
+    font-size: 1.65rem !important;
+    line-height: 1.05 !important;
+  }
+
+  /* 儲存按鈕：縮矮，但維持手機可點擊 */
+  #saveBtn {
+    min-height: 44px !important;
+    height: 46px !important;
+    padding: 8px 12px !important;
+    margin-top: 5px !important;
+  }
+}
+</style>
+
 </head>
 <body>
 
