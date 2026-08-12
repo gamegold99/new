@@ -97,98 +97,6 @@ button[onclick*="'kill'"] { display: none; }
 }
 </style>
 
-<style id="ui-optimization-v8">
-
-/* Mobile First UI v8：縮減首頁上方標題與雲端同步佔用空間
-   不改資料結構、不改計價、不改同步邏輯。 */
-h2 {
-  font-size: 20px !important;
-  margin: 4px 0 8px !important;
-  line-height: 1.25 !important;
-  letter-spacing: .5px !important;
-}
-#cloud-sync-card {
-  padding: 10px 12px !important;
-  margin-bottom: 8px !important;
-  border-radius: 12px !important;
-  box-shadow: 0 1px 6px rgba(0,0,0,.04) !important;
-}
-#cloud-sync-card > div:first-child {
-  min-height: 24px;
-}
-#cloud-sync-card > div:first-child strong {
-  font-size: 15px !important;
-}
-#cloud-status {
-  font-size: 12px !important;
-  white-space: nowrap;
-}
-#cloud-signed-in {
-  margin-top: 6px !important;
-  display: flex !important;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-#cloud-signed-in #cloud-user {
-  flex: 1 1 100%;
-  font-size: 12px !important;
-  margin: 0 0 2px !important;
-}
-#cloud-signed-in .btn-save,
-#cloud-signed-in .btn-outline {
-  width: auto !important;
-  flex: 1 1 0;
-  padding: 8px 10px !important;
-  margin: 0 !important;
-  font-size: 14px !important;
-  border-radius: 9px !important;
-}
-#cloud-signed-out {
-  margin-top: 6px !important;
-}
-#cloud-signed-out label {
-  margin-bottom: 4px !important;
-  font-size: 13px !important;
-}
-#cloud-signed-out input {
-  padding: 9px 12px !important;
-}
-#cloud-signed-out .btn-save {
-  padding: 9px 12px !important;
-  margin: 7px 0 0 !important;
-  font-size: 15px !important;
-}
-@media (max-width: 600px) {
-  body { padding: 8px !important; }
-  .container { padding-bottom: 90px !important; }
-  .card { margin-bottom: 10px; }
-}
-</style>
-
-<style id="ui-optimization-v9">
-/* Mobile First UI v9：壓縮車趟輸入區資訊密度；不改功能與資料邏輯 */
-@media (max-width: 600px) {
-  body { padding: 7px !important; }
-  .container { padding-bottom: 80px !important; }
-  h2 { font-size: 20px !important; margin: 3px 0 7px !important; }
-  .card { padding: 14px !important; border-radius: 14px !important; margin-bottom: 9px !important; }
-  .form-group { margin-bottom: 11px !important; }
-  .form-group > label { margin-bottom: 5px !important; font-size: 14px !important; }
-  input, select { padding: 10px 12px !important; border-radius: 10px !important; }
-  .flex-row { gap: 8px !important; margin-bottom: 8px !important; }
-  .arrow-text { margin: 0 2px !important; font-size: 18px !important; }
-  .btn-outline { padding: 10px !important; margin-top: 2px !important; font-size: 14px !important; }
-  .checkbox-group { gap: 8px !important; padding: 9px 10px !important; border-radius: 10px !important; font-size: 14px !important; min-height: 42px; box-sizing: border-box; }
-  .checkbox-group input { width: 20px !important; height: 20px !important; flex: 0 0 auto; }
-  .result-display { padding: 12px 14px !important; border-radius: 12px !important; margin: 8px 0 12px !important; }
-  .result-display p { margin: 3px 0 !important; font-size: 13px !important; }
-  .result-display > div { margin-top: 7px !important; padding-top: 7px !important; }
-  .result-display > div > span:first-child { font-size: 14px !important; }
-  .result-display .net-total { font-size: 27px !important; line-height: 1.1 !important; }
-  .btn.btn-save { padding: 12px !important; margin-top: 0 !important; font-size: 16px !important; border-radius: 11px !important; }
-}
-</style>
 </head>
 <body>
 
@@ -265,6 +173,20 @@ h2 {
 
   </div>
 
+  <div class="bar" style="margin-bottom:10px;" onclick="togglePanel('locationManagement')">
+    <span>📍 地點管理</span><span>▼</span>
+  </div>
+
+  <div id="locationManagement" class="panel" style="margin-top:-2px; margin-bottom:12px;">
+    <div class="card" style="padding:15px; box-shadow:none; border:1px solid #edf2f7;">
+      <p style="margin:0 0 12px; color:#718096; font-size:14px; line-height:1.6;">
+        管理起點、終點與停靠點的自動完成清單。修改地點名稱會同步更新里程規則、固定底價與歷史車趟中的地點；刪除已被使用的地點時，系統會改為隱藏，避免破壞既有資料。
+      </p>
+      <input type="search" id="location-search" placeholder="🔎 搜尋地點" oninput="renderLocationManagement()" autocomplete="off">
+      <div id="locationListArea" style="max-height:420px; overflow-y:auto; margin-top:12px;"></div>
+    </div>
+  </div>
+
   <div class="bar" style="margin-bottom:10px;" onclick="togglePanel('dataManagement')">
     <span>📦 資料備份與恢復</span><span>▼</span>
   </div>
@@ -274,24 +196,13 @@ h2 {
       <p style="margin:0 0 12px; color:#718096; font-size:14px; line-height:1.6;">
         正式使用時建議定期做完整 JSON 備份。匯入功能僅作資料恢復／搬家使用。
       </p>
-      <div style="font-weight:800;color:#4a5568;margin:2px 0 8px;">📱 本機資料備份</div>
       <button class="btn" style="background:#718096;color:#fff;" onclick="exportMigrationBackup()">📦 匯出完整 JSON 備份</button>
       <button class="btn" style="background:#5b6b7a;color:#fff;" onclick="document.getElementById('migration-file').click()">📥 匯入 JSON 資料</button>
       <input id="migration-file" type="file" accept="application/json,.json" style="display:none" onchange="importMigrationBackup(this)">
       <button class="btn" style="background:#4a5568;color:#fff;" onclick="exportRawStorageNoCommit()">🔎 安全匯出原始資料</button>
-
-      <div style="border-top:1px solid #e2e8f0;margin:14px 0 12px;padding-top:12px;">
-        <div style="font-weight:800;color:#4a5568;margin-bottom:6px;">☁️ 雲端備份</div>
-        <div style="font-size:13px;color:#718096;line-height:1.6;margin-bottom:8px;">
-          平常同步以手機資料為主。雲端會保留歷史版本，方便誤刪時救援。
-        </div>
-        <button class="btn" style="background:#805ad5;color:#fff;" onclick="window.TripCloud && window.TripCloud.syncNow(true)">☁️ 立即備份到雲端</button>
-        <button class="btn" style="background:#6b46c1;color:#fff;" onclick="window.TripCloud && window.TripCloud.openRestore()">🕘 查看雲端歷史／還原</button>
-        <div id="cloudRestoreArea" style="display:none; margin-top:12px;"></div>
-      </div>
-
-      <div style="font-size:13px;color:#718096;text-align:center;margin-top:8px;line-height:1.6;">
-        一般同步不會用雲端覆蓋手機；只有你明確選擇「雲端歷史／還原」時，才會把指定版本寫回手機。
+      <button class="btn" style="background:#805ad5;color:#fff;" onclick="window.TripCloud.openRestore()">☁️ 雲端歷史還原</button><div id="cloudRestoreArea" style="display:none; margin-top:12px;"></div>
+      <div style="font-size:13px;color:#718096;text-align:center;margin-top:8px;">
+        匯入會與目前資料合併；安全匯出只讀取資料，不會修改或覆寫。
       </div>
     </div>
   </div>
@@ -341,10 +252,10 @@ h2 {
 </div>
 
 <script>
-var STORAGE_VERSION = 2;
+var STORAGE_VERSION = 3;
 var STORAGE_VERSION_KEY = 'logistic_storage_version';
 var STORAGE_BACKUP_KEY = 'logistic_storage_backup';
-var STORAGE_KEYS = ['logistic_kms', 'logistic_prices', 'logistic_logs', 'logistic_trash'];
+var STORAGE_KEYS = ['logistic_kms', 'logistic_prices', 'logistic_logs', 'logistic_trash', 'logistic_locations'];
 
 function isPlainObject(value) {
 return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -377,7 +288,8 @@ var DB = {
 km: getStoredData('logistic_kms', {}),
 price: getStoredData('logistic_prices', {}),
 logs: getStoredData('logistic_logs', []),
-trash: getStoredData('logistic_trash', [])
+trash: getStoredData('logistic_trash', []),
+locations: getStoredData('logistic_locations', {})
 };
 
 var now = new Date();
@@ -442,6 +354,7 @@ var commit = function() {
 var sortFn = function(a,b) { return new Date(b.date) - new Date(a.date) || b.id - a.id; };
 DB.km = isPlainObject(DB.km) ? DB.km : {};
 DB.price = isPlainObject(DB.price) ? DB.price : {};
+DB.locations = isPlainObject(DB.locations) ? DB.locations : {};
 DB.logs = normalizeTripCollection(DB.logs);
 DB.trash = normalizeTripCollection(DB.trash);
 DB.logs.sort(sortFn); DB.trash.sort(sortFn);
@@ -449,7 +362,8 @@ var data = {
 'logistic_kms': JSON.stringify(DB.km),
 'logistic_prices': JSON.stringify(DB.price),
 'logistic_logs': JSON.stringify(DB.logs),
-'logistic_trash': JSON.stringify(DB.trash)
+'logistic_trash': JSON.stringify(DB.trash),
+'logistic_locations': JSON.stringify(DB.locations)
 };
 var previous = {};
 try {
@@ -472,12 +386,54 @@ updateUI();
 return true;
 };
 
+/*
+ * 地點隱藏狀態保護：若前一版更新時意外把 logistic_locations 寫成「全部顯示」，
+ * 嘗試從本機 commit 保留的 logistic_storage_backup 恢復 hidden=true。
+ * 只執行一次，且只在目前資料完全沒有 hidden=true、備份確實存在 hidden=true 時啟用。
+ */
+function recoverHiddenLocationsFromLocalBackup() {
+    try {
+        if (localStorage.getItem('logistic_location_recovery_v1') === 'done') return;
+        var current = isPlainObject(DB.locations) ? DB.locations : {};
+        var currentHasHidden = Object.keys(current).some(function(name) {
+            return isPlainObject(current[name]) && current[name].hidden === true;
+        });
+        if (currentHasHidden) {
+            localStorage.setItem('logistic_location_recovery_v1', 'done');
+            return;
+        }
+        var raw = localStorage.getItem(STORAGE_BACKUP_KEY);
+        if (!raw) return;
+        var backup = JSON.parse(raw);
+        if (!backup || !backup.data || typeof backup.data.logistic_locations !== 'string') return;
+        var previous = JSON.parse(backup.data.logistic_locations);
+        if (!isPlainObject(previous)) return;
+        var recovered = 0;
+        Object.keys(previous).forEach(function(name) {
+            var meta = previous[name];
+            if (isPlainObject(meta) && meta.hidden === true) {
+                if (!isPlainObject(DB.locations[name])) DB.locations[name] = {};
+                DB.locations[name].hidden = true;
+                recovered++;
+            }
+        });
+        localStorage.setItem('logistic_location_recovery_v1', 'done');
+        if (recovered > 0) {
+            localStorage.setItem('logistic_locations', JSON.stringify(DB.locations));
+        }
+    } catch (e) {
+        /* Recovery is best-effort and must never block the app. */
+    }
+}
+
 function migrateStorage() {
 var version = 1;
 try { version = parseInt(localStorage.getItem(STORAGE_VERSION_KEY), 10) || 1; } catch(e) {}
 var needsMigration = version < STORAGE_VERSION;
 DB.logs = normalizeTripCollection(DB.logs);
 DB.trash = normalizeTripCollection(DB.trash);
+DB.locations = isPlainObject(DB.locations) ? DB.locations : {};
+ensureLocationRegistry();
 if (needsMigration) commit();
 }
 
@@ -486,39 +442,110 @@ find('trash-count').innerText = DB.trash.length;
 renderHistory();
 if (find('trashManagement') && find('trashManagement').style.display === 'block') renderTrash();
 if (find('priceSettingsContainer')) renderSettings();
-/*
- * 地點清單不能只依賴價格/里程規則。
- * 舊車趟本身就保存了起點、終點與停靠點，因此匯入舊資料後，
- * 應直接把這些行政區加入自動完成清單，不需要重新手動輸入。
- */
-var locs = {};
-
-function addLoc(v) {
-    v = asText(v);
-    if (v) locs[v] = true;
 }
 
-Object.keys(DB.km).concat(Object.keys(DB.price)).forEach(function(k) {
-    var p = k.split('-');
-    addLoc(p[0]);
-    addLoc(p.slice(1).join('-'));
-});
+/*
+ * 地點清單由既有規則、歷史車趟與「地點管理」共同維護。
+ * 管理員可隱藏／重新顯示地點，但不會因清理候選清單而破壞歷史資料。
+ */
+function collectAllLocations() {
+    var locs = {};
+    function addLoc(v) {
+        v = asText(v);
+        if (v) locs[v] = true;
+    }
+    Object.keys(DB.km).concat(Object.keys(DB.price)).forEach(function(k) {
+        var p = k.split('-');
+        addLoc(p[0]);
+        addLoc(p.slice(1).join('-'));
+    });
+    DB.logs.concat(DB.trash).forEach(function(r) {
+        addLoc(r.start); addLoc(r.from); addLoc(r.end); addLoc(r.to);
+        if (Array.isArray(r.dests)) r.dests.forEach(addLoc);
+        if (Array.isArray(r.stops)) r.stops.forEach(addLoc);
+    });
+    Object.keys(DB.locations).forEach(addLoc);
+    return locs;
+}
 
-DB.logs.concat(DB.trash).forEach(function(r) {
-    addLoc(r.start);
-    addLoc(r.from);
-    addLoc(r.end);
-    addLoc(r.to);
+function ensureLocationRegistry() {
+    if (!isPlainObject(DB.locations)) DB.locations = {};
+    var locs = collectAllLocations();
+    Object.keys(locs).forEach(function(name) {
+        if (!isPlainObject(DB.locations[name])) DB.locations[name] = { hidden:false };
+        else if (DB.locations[name].hidden !== true) DB.locations[name].hidden = false;
+    });
+}
 
-    if (Array.isArray(r.dests)) r.dests.forEach(addLoc);
-    if (Array.isArray(r.stops)) r.stops.forEach(addLoc);
-});
+function escapeHtml(v) {
+    return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
 
-var h = [];
-Object.keys(locs).sort().forEach(function(l) {
-    h.push('<option value="', l.replace(/&/g, '&amp;').replace(/"/g, '&quot;'), '">');
-});
-find('location-options').innerHTML = h.join('');
+function locationUsage(name) {
+    var count = 0;
+    function hit(v) { if (asText(v) === name) count++; }
+    Object.keys(DB.km).forEach(function(k) {
+        var p = k.split('-'); if (p[0] === name || p.slice(1).join('-') === name) count++;
+    });
+    Object.keys(DB.price).forEach(function(k) {
+        var p = k.split('-'); if (p[0] === name || p.slice(1).join('-') === name) count++;
+    });
+    DB.logs.concat(DB.trash).forEach(function(r) {
+        hit(r.start); hit(r.from); hit(r.end); hit(r.to);
+        if (Array.isArray(r.dests)) r.dests.forEach(hit);
+        if (Array.isArray(r.stops)) r.stops.forEach(hit);
+    });
+    return count;
+}
+
+function renderLocationDatalist() {
+    ensureLocationRegistry();
+    var h = [];
+    Object.keys(collectAllLocations()).sort().forEach(function(l) {
+        var meta = DB.locations[l] || {};
+        if (meta.hidden === true) return;
+        h.push('<option value="', escapeHtml(l), '">');
+    });
+    find('location-options').innerHTML = h.join('');
+}
+
+function renderLocationManagement() {
+    ensureLocationRegistry();
+    var area = find('locationListArea');
+    if (!area) return;
+    var q = asText(find('location-search') && find('location-search').value).toLowerCase();
+    var names = Object.keys(collectAllLocations()).sort(function(a,b){ return a.localeCompare(b, 'zh-Hant'); });
+    var h = [];
+    names.forEach(function(name) {
+        var meta = DB.locations[name] || {};
+        var hidden = meta.hidden === true;
+        if (q && name.toLowerCase().indexOf(q) === -1) return;
+        var uses = locationUsage(name);
+        var encoded = encodeURIComponent(name);
+        h.push('<div class="list-item" style="align-items:flex-start; gap:10px;">',
+            '<div style="min-width:0; flex:1;"><div style="font-weight:800; word-break:break-all;">', escapeHtml(name), '</div>',
+            '<div style="font-size:12px;color:#718096;margin-top:4px;">使用 ', uses, ' 次', hidden ? ' · 已隱藏自動完成' : ' · 顯示於自動完成', '</div></div>',
+            '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">',
+            '<button type="button" class="btn-sm" style="background:var(--primary);" onclick="editLocation(decodeURIComponent(\'', encoded, '\'))">編輯</button>',
+            (hidden
+                ? '<button type="button" class="btn-sm" style="background:#718096;color:#fff;" onclick="toggleLocationHidden(decodeURIComponent(\''+encoded+'\'))">顯示</button>'
+                : '<button type="button" class="btn-sm" style="background:#e67e22;color:#fff;" onclick="toggleLocationHidden(decodeURIComponent(\''+encoded+'\'))">隱藏</button>'),
+            '<button type="button" class="btn-sm" style="background:var(--danger);color:#fff;" onclick="deleteLocation(decodeURIComponent(\'', encoded, '\'))">刪除</button>',
+            '</div></div>');
+    });
+    area.innerHTML = h.join('') || '<p style="text-align:center;color:#a0aec0;padding:20px;">找不到符合的地點</p>';
+}
+
+function updateUI() {
+    find('trash-count').innerText = DB.trash.length;
+    renderHistory();
+    if (find('trashManagement') && find('trashManagement').style.display === 'block') renderTrash();
+    if (find('priceSettingsContainer')) renderSettings();
+    ensureLocationRegistry();
+    renderLocationDatalist();
+    if (find('locationManagement') && find('locationManagement').style.display === 'block') renderLocationManagement();
 }
 
 var watch = ['ton', 'start', 'dest1', 'isRoundTrip', 'isSlightOverweight'];
@@ -677,6 +704,71 @@ h.push('<div class="list-item" style="background:#fdfdfd; border:1px dashed #edf
 find('priceListArea').innerHTML = h.join('') || '<p style="text-align:center; color:#a0aec0; padding:20px;">尚無自訂規則</p>';
 }
 
+function replaceLocationEverywhere(oldName, newName) {
+    function replaceKeyMap(map) {
+        var changes = [];
+        Object.keys(map).forEach(function(k) {
+            var p = k.split('-');
+            var a = p[0], b = p.slice(1).join('-');
+            if (a === oldName || b === oldName) {
+                var nk = (a === oldName ? newName : a) + '-' + (b === oldName ? newName : b);
+                changes.push({oldKey:k, newKey:nk, value:map[k]});
+            }
+        });
+        changes.forEach(function(c){
+            if (map[c.newKey] == null) map[c.newKey] = c.value;
+            else if (isPlainObject(map[c.newKey]) && isPlainObject(c.value)) Object.keys(c.value).forEach(function(t){ map[c.newKey][t] = c.value[t]; });
+            delete map[c.oldKey];
+        });
+    }
+    replaceKeyMap(DB.km); replaceKeyMap(DB.price);
+    function repl(v){ return asText(v) === oldName ? newName : v; }
+    DB.logs.concat(DB.trash).forEach(function(r){
+        r.start=repl(r.start); r.from=repl(r.from); r.end=repl(r.end); r.to=repl(r.to);
+        if (Array.isArray(r.dests)) r.dests=r.dests.map(repl);
+        if (Array.isArray(r.stops)) r.stops=r.stops.map(repl);
+    });
+}
+
+window.editLocation = function(oldName) {
+    var current = asText(oldName);
+    if (!current) return;
+    var next = window.prompt('修改地點名稱\n\n目前：' + current + '\n\n請輸入新的地點名稱：', current);
+    if (next === null) return;
+    next = asText(next);
+    if (!next) { alert('地點名稱不能為空'); return; }
+    if (next === current) return;
+    var locs = collectAllLocations();
+    if (locs[next]) { alert('「' + next + '」已經存在，請使用其他名稱。'); return; }
+    if (!confirm('確定將「' + current + '」修改為「' + next + '」嗎？\n\n這會同步更新里程規則、固定底價與歷史車趟中的地點名稱。')) return;
+    replaceLocationEverywhere(current, next);
+    var meta = DB.locations[current] || {hidden:false};
+    delete DB.locations[current];
+    DB.locations[next] = meta;
+    if (commit()) alert('地點已修改為「' + next + '」');
+};
+
+window.toggleLocationHidden = function(name) {
+    ensureLocationRegistry();
+    if (!DB.locations[name]) DB.locations[name] = {hidden:false};
+    DB.locations[name].hidden = DB.locations[name].hidden !== true;
+    if (commit()) renderLocationManagement();
+};
+
+window.deleteLocation = function(name) {
+    ensureLocationRegistry();
+    var uses = locationUsage(name);
+    if (uses > 0) {
+        if (!confirm('「' + name + '」目前仍被使用 ' + uses + ' 次。\n\n為避免破壞既有車趟與計價規則，刪除會改為「隱藏」，不再出現在輸入候選清單。\n\n確定隱藏嗎？')) return;
+        if (!DB.locations[name]) DB.locations[name] = {hidden:false};
+        DB.locations[name].hidden = true;
+    } else {
+        if (!confirm('確定要永久刪除「' + name + '」這個地點嗎？\n\n此地點沒有被目前資料使用。')) return;
+        delete DB.locations[name];
+    }
+    if (commit()) renderLocationManagement();
+};
+
 function togglePanel(id) {
 var p = find(id); p.style.display = (p.style.display === 'block' ? 'none' : 'block'); updateUI();
 }
@@ -777,43 +869,355 @@ window.editAmount = function(id) {
     }
 
     if (!record) {
-        alert("找不到這筆業績資料");
+        alert("找不到這筆車趟資料");
         return;
     }
 
-    var currentAmount = Number(record.gross);
-    if (!isFinite(currentAmount) || currentAmount < 0) currentAmount = 0;
+    var currentDests = Array.isArray(record.dests)
+        ? record.dests.slice()
+        : (record.to ? [record.to].concat(Array.isArray(record.stops) ? record.stops : []) : []);
 
-    var input = window.prompt(
-        "修改這筆車趟的業績金額\n\n目前金額：NT " +
-        currentAmount.toLocaleString() +
-        " 元\n\n請輸入新的金額：",
-        String(currentAmount)
-    );
+    if (!currentDests.length) currentDests = [""];
+    while (currentDests.length < 1) currentDests.push("");
 
-    if (input === null) return;
+    var amount = Number(record.gross != null ? record.gross : record.totalPrice);
+    if (!isFinite(amount) || amount < 0) amount = 0;
 
-    input = String(input).replace(/,/g, "").trim();
+    /* 建立手機友善的「完整編輯」底部抽屜。
+       不再使用一個欄位跳一次 prompt，所有欄位一次完成。 */
+    var old = document.getElementById("trip-edit-modal");
+    if (old) old.remove();
 
-    if (input === "" || !isFinite(Number(input))) {
-        alert("請輸入有效的金額");
-        return;
+    var modal = document.createElement("div");
+    modal.id = "trip-edit-modal";
+    modal.innerHTML =
+        '<div class="trip-edit-backdrop"></div>' +
+        '<div class="trip-edit-sheet" role="dialog" aria-modal="true" aria-label="編輯車趟">' +
+          '<div class="trip-edit-head">' +
+            '<div><div class="trip-edit-title">✏️ 編輯車趟</div><div class="trip-edit-subtitle">一次修改整筆車趟資料</div></div>' +
+            '<button type="button" class="trip-edit-close" aria-label="關閉">×</button>' +
+          '</div>' +
+          '<div class="trip-edit-body">' +
+
+            '<div class="trip-edit-field">' +
+              '<label for="edit-trip-date">📅 日期</label>' +
+              '<input id="edit-trip-date" type="date">' +
+            '</div>' +
+
+            '<div class="trip-edit-field">' +
+              '<label for="edit-trip-ton">🚛 車型噸數</label>' +
+              '<select id="edit-trip-ton">' +
+                '<option value="0.7">0.7 噸</option>' +
+                '<option value="1.5">1.5 噸</option>' +
+                '<option value="3.5">3.5 噸</option>' +
+              '</select>' +
+            '</div>' +
+
+            '<div class="trip-edit-field">' +
+              '<label>📍 運輸路線</label>' +
+              '<div class="trip-edit-route-row">' +
+                '<input id="edit-trip-start" type="text" placeholder="起點" list="location-options" autocomplete="off">' +
+                '<span class="trip-edit-arrow">→</span>' +
+                '<input id="edit-trip-dest-0" type="text" placeholder="終點" list="location-options" autocomplete="off">' +
+              '</div>' +
+              '<div id="edit-trip-stops"></div>' +
+              '<button type="button" id="edit-trip-add-stop" class="trip-edit-add-stop">＋ 新增停靠點</button>' +
+              '<div class="trip-edit-hint">每個新增停靠點仍依目前計價規則計算 NT$200。</div>' +
+            '</div>' +
+
+            '<div class="trip-edit-options">' +
+              '<label class="trip-edit-check"><input id="edit-trip-round" type="checkbox"><span>來回 <b>(+50%)</b></span></label>' +
+              '<label class="trip-edit-check danger"><input id="edit-trip-overweight" type="checkbox"><span>小超重 <b>(+300)</b></span></label>' +
+            '</div>' +
+
+            '<div class="trip-edit-field">' +
+              '<label for="edit-trip-amount">💰 業績金額</label>' +
+              '<div id="edit-trip-auto-price" class="trip-edit-auto-price">依目前計價規則計算中…</div>' +
+              '<div class="trip-edit-money"><span>NT$</span><input id="edit-trip-amount" type="number" min="0" step="1" inputmode="numeric"></div>' +
+              '<div class="trip-edit-hint">更改地點、車型、停靠點或加價選項時會自動重新計價；你仍可直接修改上面的金額。</div>' +
+            '</div>' +
+
+            '<div class="trip-edit-field">' +
+              '<label>📌 完成狀態</label>' +
+              '<label class="trip-edit-complete"><input id="edit-trip-completed" type="checkbox"><span id="edit-trip-completed-text">未完成</span></label>' +
+            '</div>' +
+
+          '</div>' +
+          '<div class="trip-edit-footer">' +
+            '<button type="button" id="edit-trip-cancel" class="trip-edit-cancel">取消</button>' +
+            '<button type="button" id="edit-trip-save" class="trip-edit-save">💾 儲存修改</button>' +
+          '</div>' +
+        '</div>';
+
+    document.body.appendChild(modal);
+
+    /* 只注入一次樣式，避免影響其他畫面。 */
+    if (!document.getElementById("trip-edit-style")) {
+        var style = document.createElement("style");
+        style.id = "trip-edit-style";
+        style.textContent = `
+#trip-edit-modal{position:fixed;inset:0;z-index:99999;display:flex;align-items:flex-end;justify-content:center}
+.trip-edit-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.58);backdrop-filter:blur(2px)}
+.trip-edit-sheet{position:relative;width:min(600px,100%);max-height:92vh;background:#f8fafc;border-radius:24px 24px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.2);display:flex;flex-direction:column;overflow:hidden;animation:tripEditUp .2s ease-out}
+@keyframes tripEditUp{from{transform:translateY(20px);opacity:.5}to{transform:translateY(0);opacity:1}}
+.trip-edit-head{background:#fff;padding:18px 20px 14px;border-bottom:1px solid #edf2f7;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.trip-edit-title{font-size:21px;font-weight:900;color:#2c3e50}
+.trip-edit-subtitle{font-size:13px;color:#718096;margin-top:2px}
+.trip-edit-close{width:42px;height:42px;border:0;border-radius:50%;background:#f1f5f9;color:#475569;font-size:28px;line-height:1;cursor:pointer}
+.trip-edit-body{padding:18px 18px 10px;overflow:auto;-webkit-overflow-scrolling:touch}
+.trip-edit-field{margin-bottom:17px}
+.trip-edit-field>label{display:block;margin:0 0 8px;font-weight:800;color:#475569;font-size:15px}
+.trip-edit-field input,.trip-edit-field select{background:#fff;border:1.5px solid #e2e8f0;border-radius:13px;padding:13px 14px;font-size:17px;min-height:48px}
+.trip-edit-route-row{display:flex;align-items:center;gap:8px}
+.trip-edit-route-row input{min-width:0;flex:1}
+.trip-edit-arrow{font-size:23px;font-weight:900;color:#94a3b8;flex:0 0 auto}
+.trip-edit-stop-row{display:flex;align-items:center;gap:8px;margin-top:9px}
+.trip-edit-stop-row input{min-width:0;flex:1}
+.trip-edit-remove-stop{width:46px;height:46px;border:1px solid #fecaca;background:#fff1f2;color:#dc2626;border-radius:12px;font-size:20px;font-weight:900}
+.trip-edit-add-stop{width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1.5px dashed #cbd5e1;background:#fff;color:#334155;font-size:15px;font-weight:800}
+.trip-edit-hint{font-size:12px;color:#94a3b8;margin-top:7px}
+.trip-edit-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:3px 0 18px}
+.trip-edit-check{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid #e2e8f0;border-radius:13px;padding:13px;font-weight:800;color:#475569}
+.trip-edit-check input{width:22px!important;height:22px!important;min-height:0!important;flex:0 0 auto}
+.trip-edit-check.danger{color:#d94b45}
+.trip-edit-money{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #e2e8f0;border-radius:13px;padding:0 13px}
+.trip-edit-money span{font-size:18px;font-weight:900;color:#475569}
+.trip-edit-money input{border:0!important;padding-left:0!important;box-shadow:none!important}
+.trip-edit-auto-price{font-size:13px;color:#64748b;margin:-2px 0 7px;font-weight:800}
+.trip-edit-auto-price.is-auto{color:#2f855a}
+.trip-edit-auto-price.is-manual{color:#b7791f}
+.trip-edit-complete{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e2e8f0;border-radius:13px;padding:12px 14px;font-weight:900;color:#475569}
+.trip-edit-complete input{width:23px!important;height:23px!important;min-height:0!important}
+.trip-edit-footer{display:grid;grid-template-columns:1fr 1.5fr;gap:10px;padding:12px 18px max(12px,env(safe-area-inset-bottom));background:#fff;border-top:1px solid #edf2f7}
+.trip-edit-footer button{min-height:52px;border-radius:13px;font-size:17px;font-weight:900}
+.trip-edit-cancel{border:1px solid #cbd5e1;background:#fff;color:#475569}
+.trip-edit-save{border:0;background:#2c3e50;color:#fff;box-shadow:0 4px 12px rgba(44,62,80,.2)}
+@media(max-width:420px){.trip-edit-options{grid-template-columns:1fr}.trip-edit-title{font-size:19px}.trip-edit-body{padding-left:14px;padding-right:14px}.trip-edit-footer{padding-left:14px;padding-right:14px}}
+        `;
+        document.head.appendChild(style);
     }
 
-    var newAmount = Number(input);
+    var dateInput = document.getElementById("edit-trip-date");
+    var tonInput = document.getElementById("edit-trip-ton");
+    var startInput = document.getElementById("edit-trip-start");
+    var amountInput = document.getElementById("edit-trip-amount");
+    var roundInput = document.getElementById("edit-trip-round");
+    var overweightInput = document.getElementById("edit-trip-overweight");
+    var completedInput = document.getElementById("edit-trip-completed");
+    var completedText = document.getElementById("edit-trip-completed-text");
+    var stopsBox = document.getElementById("edit-trip-stops");
+    var autoPriceBox = document.getElementById("edit-trip-auto-price");
+    var autoPriceTimer = null;
+    var amountManuallyEdited = false;
 
-    if (newAmount < 0) {
-        alert("金額不能小於 0");
-        return;
+    dateInput.value = record.date || "";
+    tonInput.value = String(record.ton || record.truckType || "1.5");
+    if (["0.7","1.5","3.5"].indexOf(tonInput.value) === -1) tonInput.value = "1.5";
+    startInput.value = record.start || record.from || "";
+    amountInput.value = String(amount);
+    roundInput.checked = !!record.isRoundTrip;
+    overweightInput.checked = !!(record.isSlightOverweight || record.isOverWeight);
+    completedInput.checked = !!(record.isCompleted || record.completed);
+
+    /* 編輯時沿用主畫面的計價規則。
+       路線／車型／停靠點／加價選項一變，就直接把業績金額重算；
+       使用者仍可最後手動改金額，不會被儲存流程覆蓋。 */
+    function calculateEditAmount(updateInput) {
+        var s = startInput.value.trim();
+        var d = document.getElementById("edit-trip-dest-0").value.trim();
+        var t = tonInput.value;
+        var key = s + '-' + d;
+        var reverseKey = d + '-' + s;
+        var base = 0;
+        var mode = '';
+
+        if (s && d && DB.price[key] && DB.price[key][t]) {
+            base = parseInt(DB.price[key][t], 10) || 0;
+            mode = '固定底價';
+        } else if (s && d && DB.price[reverseKey] && DB.price[reverseKey][t]) {
+            base = parseInt(DB.price[reverseKey][t], 10) || 0;
+            mode = '固定底價（反向規則）';
+        } else if (s && d) {
+            var km = DB.km[key] || DB.km[reverseKey] || 0;
+            km = parseFloat(km) || 0;
+            if (km > 0) {
+                var rate = (t === '1.5' ? (800 + km * 25) : (t === '3.5' ? (1000 + km * 30) : (600 + km * 20)));
+                base = Math.round(rate / 100) * 100;
+                mode = '里程計價';
+            }
+        }
+
+        var stopCount = Array.prototype.filter.call(
+            stopsBox.querySelectorAll('input'),
+            function(input){ return input.value.trim() !== ''; }
+        ).length;
+
+        var total = base;
+        if (base > 0) {
+            if (roundInput.checked) total += Math.round(base * 0.5);
+            total += stopCount * 200;
+            if (overweightInput.checked) total += 300;
+        }
+
+        if (base > 0) {
+            autoPriceBox.textContent = '依目前規則：' + mode + ' → NT$ ' + total.toLocaleString('zh-TW');
+            autoPriceBox.className = 'trip-edit-auto-price is-auto';
+            if (updateInput && !amountManuallyEdited) amountInput.value = String(total);
+            return total;
+        }
+
+        autoPriceBox.textContent = s && d ? '目前沒有可套用的計價規則，保留原金額，可直接手動修改。' : '請先選擇完整起點與終點。';
+        autoPriceBox.className = 'trip-edit-auto-price is-manual';
+        return null;
     }
 
-    record.gross = newAmount;
-    record.totalPrice = newAmount;
-    record.updatedAt = new Date().toISOString();
+    function scheduleEditReprice() {
+        clearTimeout(autoPriceTimer);
+        amountManuallyEdited = false;
+        autoPriceTimer = setTimeout(function(){ calculateEditAmount(true); }, 120);
+    }
 
-    if (!commit()) return;
+    function bindReprice(el) {
+        if (!el) return;
+        el.addEventListener('input', scheduleEditReprice);
+        el.addEventListener('change', scheduleEditReprice);
+    }
 
-    alert("業績金額已更新為 NT " + newAmount.toLocaleString() + " 元");
+    amountInput.addEventListener('input', function(){ amountManuallyEdited = true; });
+    amountInput.addEventListener('change', function(){ amountManuallyEdited = true; });
+    bindReprice(startInput);
+    bindReprice(document.getElementById('edit-trip-dest-0'));
+    bindReprice(tonInput);
+    bindReprice(roundInput);
+    bindReprice(overweightInput);
+    calculateEditAmount(false);
+
+    function updateCompletedText() {
+        completedText.textContent = completedInput.checked ? "已完成" : "未完成";
+        completedText.style.color = completedInput.checked ? "#22543d" : "#822727";
+    }
+    updateCompletedText();
+    completedInput.addEventListener("change", updateCompletedText);
+
+    var stopValues = currentDests.slice(1);
+
+    function renderEditStops() {
+        stopsBox.innerHTML = "";
+        stopValues.forEach(function(value, index) {
+            var row = document.createElement("div");
+            row.className = "trip-edit-stop-row";
+            row.innerHTML =
+                '<input type="text" list="location-options" autocomplete="off" placeholder="停靠點 ' + (index + 1) + '">' +
+                '<button type="button" class="trip-edit-remove-stop" aria-label="刪除停靠點">×</button>';
+            var input = row.querySelector("input");
+            input.value = value || "";
+            bindReprice(input);
+            row.querySelector("button").addEventListener("click", function() {
+                stopValues.splice(index, 1);
+                renderEditStops();
+                scheduleEditReprice();
+            });
+            stopsBox.appendChild(row);
+        });
+    }
+
+    renderEditStops();
+
+    /* 既有資料若有多個終點，第二個以後視為停靠點。 */
+    document.getElementById("edit-trip-dest-0").value = currentDests[0] || "";
+    calculateEditAmount(false);
+
+    document.getElementById("edit-trip-add-stop").addEventListener("click", function() {
+        var inputs = stopsBox.querySelectorAll("input");
+        stopValues = Array.prototype.map.call(inputs, function(input) {
+            return input.value.trim();
+        });
+        stopValues.push("");
+        renderEditStops();
+        scheduleEditReprice();
+        setTimeout(function() {
+            var last = stopsBox.querySelectorAll("input");
+            if (last.length) last[last.length - 1].focus();
+        }, 0);
+    });
+
+    function closeEdit() {
+        var el = document.getElementById("trip-edit-modal");
+        if (el) el.remove();
+        document.body.style.overflow = "";
+    }
+
+    document.body.style.overflow = "hidden";
+    modal.querySelector(".trip-edit-backdrop").addEventListener("click", closeEdit);
+    modal.querySelector(".trip-edit-close").addEventListener("click", closeEdit);
+    document.getElementById("edit-trip-cancel").addEventListener("click", closeEdit);
+
+    document.getElementById("edit-trip-save").addEventListener("click", function() {
+        var nextDate = dateInput.value.trim();
+        var nextTon = tonInput.value;
+        var nextStart = startInput.value.trim();
+        var destInput = document.getElementById("edit-trip-dest-0");
+        var nextDest = destInput.value.trim();
+
+        var liveStops = Array.prototype.map.call(
+            stopsBox.querySelectorAll("input"),
+            function(input) { return input.value.trim(); }
+        ).filter(Boolean);
+
+        if (!nextDate) {
+            alert("請選擇日期");
+            dateInput.focus();
+            return;
+        }
+        if (!nextStart) {
+            alert("請輸入起點");
+            startInput.focus();
+            return;
+        }
+        if (!nextDest) {
+            alert("請輸入終點");
+            destInput.focus();
+            return;
+        }
+
+        var amountText = amountInput.value.trim();
+        var nextAmount = Number(amountText);
+        if (amountText === "" || !isFinite(nextAmount) || nextAmount < 0) {
+            alert("請輸入有效的業績金額");
+            amountInput.focus();
+            return;
+        }
+
+        var nextDests = [nextDest].concat(liveStops);
+        var completed = completedInput.checked;
+        var overweight = overweightInput.checked;
+        var roundTrip = roundInput.checked;
+
+        record.date = nextDate;
+        record.ton = nextTon;
+        record.truckType = nextTon;
+        record.start = nextStart;
+        record.from = nextStart;
+        record.end = nextDests[0];
+        record.to = nextDests[0];
+        record.dests = nextDests;
+        record.stops = nextDests.slice(1);
+        record.gross = nextAmount;
+        record.total = nextAmount;
+        record.totalPrice = nextAmount;
+        record.isRoundTrip = roundTrip;
+        record.isSlightOverweight = overweight;
+        record.isOverWeight = overweight;
+        record.isCompleted = completed;
+        record.isDone = completed;
+        record.completed = completed;
+        record.updatedAt = new Date().toISOString();
+
+        if (!commit()) return;
+
+        closeEdit();
+        updateUI();
+    });
 };
 
 function migrationNormalizeRecord(o) {
@@ -1368,6 +1772,7 @@ c++;
 localStorage.setItem('is_rescued', 'true'); find('rescue-btn-container').style.display = 'none';
 if (c > 0) { commit(); alert("成功救回 " + c + " 筆歷史紀錄！"); } else { alert("資料同步完成。"); }
 }
+recoverHiddenLocationsFromLocalBackup();
 migrateStorage();
 updateUI();
 </script>

@@ -75,11 +75,12 @@
 
   function buildSnapshot() {
     return {
-      version: 4,
+      version: 5,
       logs: clone(DB.logs, []),
       trash: clone(DB.trash, []),
       km: clone(DB.km, {}),
       price: clone(DB.price, {}),
+      locations: clone(DB.locations, {}),
       savedAt: new Date().toISOString(),
       source: 'local-first'
     };
@@ -106,6 +107,7 @@
         trash: clone(previous.trash, []),
         km: clone(previous.km, {}),
         price: clone(previous.price, {}),
+        locations: clone(previous.locations, {}),
         version: previous.version || 1,
         source: previous.source || 'cloud'
       });
@@ -116,7 +118,8 @@
       var stamp = String(item && item.savedAt || '');
       var key = stamp + '|' + JSON.stringify([
         item && item.logs || [],
-        item && item.trash || []
+        item && item.trash || [],
+        item && item.locations || {}
       ]);
       if (!seen[key]) { seen[key] = true; unique.push(item); }
     });
@@ -135,7 +138,8 @@
     return (Array.isArray(DB.logs) && DB.logs.length > 0) ||
       (Array.isArray(DB.trash) && DB.trash.length > 0) ||
       (DB.km && Object.keys(DB.km).length > 0) ||
-      (DB.price && Object.keys(DB.price).length > 0);
+      (DB.price && Object.keys(DB.price).length > 0) ||
+      (DB.locations && Object.keys(DB.locations).length > 0);
   }
 
   function isInitialized() {
@@ -218,6 +222,7 @@
       DB.trash = clone(remoteSnapshot.trash, []);
       DB.km = clone(remoteSnapshot.km, {});
       DB.price = clone(remoteSnapshot.price, {});
+      DB.locations = clone(remoteSnapshot.locations, {});
       if (originalCommit() === false) throw new Error('雲端資料寫入本機失敗');
     } finally {
       applyingRemote = false;
@@ -340,6 +345,7 @@
       DB.trash = clone(item.trash, []);
       DB.km = clone(item.km, {});
       DB.price = clone(item.price, {});
+      DB.locations = clone(item.locations, {});
       if (originalCommit() === false) throw new Error('手機資料儲存失敗');
       applyingRemote = false;
       markInitialized();
