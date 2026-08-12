@@ -75,7 +75,7 @@
 
   function buildSnapshot() {
     return {
-      version: 5,
+      version: 4,
       logs: clone(DB.logs, []),
       trash: clone(DB.trash, []),
       km: clone(DB.km, {}),
@@ -131,7 +131,7 @@
   function validSnapshot(value) {
     return value && typeof value === 'object' &&
       Array.isArray(value.logs) && Array.isArray(value.trash) &&
-      value.km && value.price;
+      value.km && value.price && (value.locations === undefined || typeof value.locations === 'object');
   }
 
   function localHasAnyData() {
