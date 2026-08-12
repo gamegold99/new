@@ -265,20 +265,6 @@ h2 {
 
   </div>
 
-  <div class="bar" style="margin-bottom:10px;" onclick="togglePanel('locationManagement')">
-    <span>📍 地點管理</span><span>▼</span>
-  </div>
-
-  <div id="locationManagement" class="panel" style="margin-top:-2px; margin-bottom:12px;">
-    <div class="card" style="padding:15px; box-shadow:none; border:1px solid #edf2f7;">
-      <p style="margin:0 0 12px; color:#718096; font-size:14px; line-height:1.6;">
-        管理起點、終點與停靠點的自動完成清單。刪除仍被歷史資料使用的地點時，系統會改為隱藏，不會破壞既有車趟。
-      </p>
-      <input type="search" id="location-search" placeholder="🔎 搜尋地點" oninput="renderLocationManagement()" autocomplete="off">
-      <div id="locationListArea" style="max-height:420px; overflow-y:auto; margin-top:12px;"></div>
-    </div>
-  </div>
-
   <div class="bar" style="margin-bottom:10px;" onclick="togglePanel('dataManagement')">
     <span>📦 資料備份與恢復</span><span>▼</span>
   </div>
@@ -355,10 +341,10 @@ h2 {
 </div>
 
 <script>
-var STORAGE_VERSION = 3;
+var STORAGE_VERSION = 2;
 var STORAGE_VERSION_KEY = 'logistic_storage_version';
 var STORAGE_BACKUP_KEY = 'logistic_storage_backup';
-var STORAGE_KEYS = ['logistic_kms', 'logistic_prices', 'logistic_logs', 'logistic_trash', 'logistic_locations'];
+var STORAGE_KEYS = ['logistic_kms', 'logistic_prices', 'logistic_logs', 'logistic_trash'];
 
 function isPlainObject(value) {
 return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -492,173 +478,47 @@ try { version = parseInt(localStorage.getItem(STORAGE_VERSION_KEY), 10) || 1; } 
 var needsMigration = version < STORAGE_VERSION;
 DB.logs = normalizeTripCollection(DB.logs);
 DB.trash = normalizeTripCollection(DB.trash);
-ensureLocationRegistry();
 if (needsMigration) commit();
 }
-
-function collectAllLocations() {
-    var locs = {};
-    function addLoc(v) {
-        v = asText(v);
-        if (v) locs[v] = true;
-    }
-    Object.keys(DB.km).concat(Object.keys(DB.price)).forEach(function(k) {
-        var p = k.split('-');
-        addLoc(p[0]);
-        addLoc(p.slice(1).join('-'));
-    });
-    DB.logs.concat(DB.trash).forEach(function(r) {
-        addLoc(r.start); addLoc(r.from); addLoc(r.end); addLoc(r.to);
-        if (Array.isArray(r.dests)) r.dests.forEach(addLoc);
-        if (Array.isArray(r.stops)) r.stops.forEach(addLoc);
-    });
-    Object.keys(DB.locations || {}).forEach(addLoc);
-    return locs;
-}
-
-function ensureLocationRegistry() {
-    if (!isPlainObject(DB.locations)) DB.locations = {};
-    var locs = collectAllLocations();
-    Object.keys(locs).forEach(function(name) {
-        if (!isPlainObject(DB.locations[name])) DB.locations[name] = { hidden:false };
-        else if (DB.locations[name].hidden !== true) DB.locations[name].hidden = false;
-    });
-}
-
-function escapeHtml(v) {
-    return String(v == null ? '' : v)
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-
-function locationUsage(name) {
-    var count = 0;
-    function hit(v) { if (asText(v) === name) count++; }
-    Object.keys(DB.km).forEach(function(k) {
-        var p = k.split('-'); if (p[0] === name || p.slice(1).join('-') === name) count++;
-    });
-    Object.keys(DB.price).forEach(function(k) {
-        var p = k.split('-'); if (p[0] === name || p.slice(1).join('-') === name) count++;
-    });
-    DB.logs.concat(DB.trash).forEach(function(r) {
-        hit(r.start); hit(r.from); hit(r.end); hit(r.to);
-        if (Array.isArray(r.dests)) r.dests.forEach(hit);
-        if (Array.isArray(r.stops)) r.stops.forEach(hit);
-    });
-    return count;
-}
-
-function renderLocationDatalist() {
-    ensureLocationRegistry();
-    var h = [];
-    Object.keys(collectAllLocations()).sort(function(a,b){ return a.localeCompare(b, 'zh-Hant'); }).forEach(function(l) {
-        var meta = DB.locations[l] || {};
-        if (meta.hidden === true) return;
-        h.push('<option value="', escapeHtml(l), '">');
-    });
-    find('location-options').innerHTML = h.join('');
-}
-
-function renderLocationManagement() {
-    ensureLocationRegistry();
-    var area = find('locationListArea');
-    if (!area) return;
-    var q = asText(find('location-search') && find('location-search').value).toLowerCase();
-    var names = Object.keys(collectAllLocations()).sort(function(a,b){ return a.localeCompare(b, 'zh-Hant'); });
-    var h = [];
-    names.forEach(function(name) {
-        var meta = DB.locations[name] || {};
-        var hidden = meta.hidden === true;
-        if (q && name.toLowerCase().indexOf(q) === -1) return;
-        var uses = locationUsage(name);
-        var encoded = encodeURIComponent(name);
-        h.push('<div class="list-item" style="align-items:flex-start; gap:10px;">',
-            '<div style="min-width:0; flex:1;"><div style="font-weight:800; word-break:break-all;">', escapeHtml(name), '</div>',
-            '<div style="font-size:12px;color:#718096;margin-top:4px;">使用 ', uses, ' 次', hidden ? ' · 已隱藏自動完成' : ' · 顯示於自動完成', '</div></div>',
-            '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">',
-            '<button type="button" class="btn-sm" style="background:var(--primary);" onclick="editLocation(decodeURIComponent(\'', encoded, '\'))">編輯</button>',
-            (hidden
-                ? '<button type="button" class="btn-sm" style="background:#718096;color:#fff;" onclick="toggleLocationHidden(decodeURIComponent(\''+encoded+'\'))">顯示</button>'
-                : '<button type="button" class="btn-sm" style="background:#e67e22;color:#fff;" onclick="toggleLocationHidden(decodeURIComponent(\''+encoded+'\'))">隱藏</button>'),
-            '<button type="button" class="btn-sm" style="background:var(--danger);color:#fff;" onclick="deleteLocation(decodeURIComponent(\'', encoded, '\'))">刪除</button>',
-            '</div></div>');
-    });
-    area.innerHTML = h.join('') || '<p style="text-align:center;color:#a0aec0;padding:20px;">找不到符合的地點</p>';
-}
-
-function replaceLocationEverywhere(oldName, newName) {
-    function replaceKeyMap(map) {
-        var changes = [];
-        Object.keys(map).forEach(function(k) {
-            var p = k.split('-');
-            var a = p[0], b = p.slice(1).join('-');
-            if (a === oldName || b === oldName) {
-                var nk = (a === oldName ? newName : a) + '-' + (b === oldName ? newName : b);
-                changes.push({oldKey:k, newKey:nk, value:map[k]});
-            }
-        });
-        changes.forEach(function(c){
-            if (map[c.newKey] == null) map[c.newKey] = c.value;
-            else if (isPlainObject(map[c.newKey]) && isPlainObject(c.value)) Object.keys(c.value).forEach(function(t){ map[c.newKey][t] = c.value[t]; });
-            delete map[c.oldKey];
-        });
-    }
-    replaceKeyMap(DB.km); replaceKeyMap(DB.price);
-    function repl(v){ return asText(v) === oldName ? newName : v; }
-    DB.logs.concat(DB.trash).forEach(function(r){
-        r.start=repl(r.start); r.from=repl(r.from); r.end=repl(r.end); r.to=repl(r.to);
-        if (Array.isArray(r.dests)) r.dests=r.dests.map(repl);
-        if (Array.isArray(r.stops)) r.stops=r.stops.map(repl);
-    });
-}
-
-window.editLocation = function(oldName) {
-    var current = asText(oldName);
-    if (!current) return;
-    var next = window.prompt('修改地點名稱\n\n目前：' + current + '\n\n請輸入新的地點名稱：', current);
-    if (next === null) return;
-    next = asText(next);
-    if (!next) { alert('地點名稱不能為空'); return; }
-    if (next === current) return;
-    var locs = collectAllLocations();
-    if (locs[next]) { alert('「' + next + '」已經存在，請使用其他名稱。'); return; }
-    if (!confirm('確定將「' + current + '」修改為「' + next + '」嗎？\n\n這會同步更新里程規則、固定底價與歷史車趟中的地點名稱。')) return;
-    replaceLocationEverywhere(current, next);
-    var meta = DB.locations[current] || {hidden:false};
-    delete DB.locations[current];
-    DB.locations[next] = meta;
-    if (commit()) alert('地點已修改為「' + next + '」');
-};
-
-window.toggleLocationHidden = function(name) {
-    ensureLocationRegistry();
-    if (!DB.locations[name]) DB.locations[name] = {hidden:false};
-    DB.locations[name].hidden = DB.locations[name].hidden !== true;
-    if (commit()) renderLocationManagement();
-};
-
-window.deleteLocation = function(name) {
-    ensureLocationRegistry();
-    var uses = locationUsage(name);
-    if (uses > 0) {
-        if (!confirm('「' + name + '」目前仍被使用 ' + uses + ' 次。\n\n為避免破壞既有車趟與計價規則，刪除會改為「隱藏」，不再出現在輸入候選清單。\n\n確定隱藏嗎？')) return;
-        if (!DB.locations[name]) DB.locations[name] = {hidden:false};
-        DB.locations[name].hidden = true;
-    } else {
-        if (!confirm('確定要永久刪除「' + name + '」這個地點嗎？\n\n此地點沒有被目前資料使用。')) return;
-        delete DB.locations[name];
-    }
-    if (commit()) renderLocationManagement();
-};
 
 function updateUI() {
 find('trash-count').innerText = DB.trash.length;
 renderHistory();
 if (find('trashManagement') && find('trashManagement').style.display === 'block') renderTrash();
 if (find('priceSettingsContainer')) renderSettings();
-ensureLocationRegistry();
-renderLocationDatalist();
-if (find('locationManagement') && find('locationManagement').style.display === 'block') renderLocationManagement();
+/*
+ * 地點清單不能只依賴價格/里程規則。
+ * 舊車趟本身就保存了起點、終點與停靠點，因此匯入舊資料後，
+ * 應直接把這些行政區加入自動完成清單，不需要重新手動輸入。
+ */
+var locs = {};
+
+function addLoc(v) {
+    v = asText(v);
+    if (v) locs[v] = true;
+}
+
+Object.keys(DB.km).concat(Object.keys(DB.price)).forEach(function(k) {
+    var p = k.split('-');
+    addLoc(p[0]);
+    addLoc(p.slice(1).join('-'));
+});
+
+DB.logs.concat(DB.trash).forEach(function(r) {
+    addLoc(r.start);
+    addLoc(r.from);
+    addLoc(r.end);
+    addLoc(r.to);
+
+    if (Array.isArray(r.dests)) r.dests.forEach(addLoc);
+    if (Array.isArray(r.stops)) r.stops.forEach(addLoc);
+});
+
+var h = [];
+Object.keys(locs).sort().forEach(function(l) {
+    h.push('<option value="', l.replace(/&/g, '&amp;').replace(/"/g, '&quot;'), '">');
+});
+find('location-options').innerHTML = h.join('');
 }
 
 var watch = ['ton', 'start', 'dest1', 'isRoundTrip', 'isSlightOverweight'];
@@ -1165,7 +1025,6 @@ function exportMigrationBackup() {
                 logistic_trash: localStorage.getItem('logistic_trash') || '[]',
                 logistic_kms: localStorage.getItem('logistic_kms') || '{}',
                 logistic_prices: localStorage.getItem('logistic_prices') || '{}',
-                logistic_locations: localStorage.getItem('logistic_locations') || '{}',
                 carLogs: localStorage.getItem('carLogs') || '[]'
             }
         };
@@ -1265,11 +1124,6 @@ function importMigrationBackup(input) {
             if (!imported.length) imported = readMigrationArray(data, 'carLogs');
 
             var trashImported = readMigrationArray(data, 'logistic_trash');
-            var importedLocations = {};
-            try {
-                if (typeof data.logistic_locations === 'string') importedLocations = JSON.parse(data.logistic_locations) || {};
-                else if (data.logistic_locations && typeof data.logistic_locations === 'object') importedLocations = data.logistic_locations;
-            } catch (e) { importedLocations = {}; }
 
             if (!imported.length && !trashImported.length) {
                 throw new Error('找不到可匯入的車趟資料');
@@ -1336,13 +1190,6 @@ function importMigrationBackup(input) {
                 trashIds[String(r.id)] = true;
                 trashAdded++;
             });
-
-            /* Import location visibility metadata without deleting current records. */
-            if (importedLocations && typeof importedLocations === 'object') {
-                Object.keys(importedLocations).forEach(function(name) {
-                    if (isPlainObject(importedLocations[name])) DB.locations[name] = { hidden: importedLocations[name].hidden === true };
-                });
-            }
 
             /* Import any real settings if the backup actually contains them. */
             migrateSettings(data);

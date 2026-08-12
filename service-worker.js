@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trip-manager-v9-location-fix';
+const CACHE_NAME = 'trip-manager-pwa-v9';
 const APP_SHELL = [
   './車趟記錄1.html',
   './manifest.webmanifest',
