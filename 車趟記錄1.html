@@ -775,6 +775,58 @@ h2 {
 }
 </style>
 
+
+<style id="ui-optimization-v16">
+/* Mobile First UI v16
+   修正 v15 日期／車型欄位：
+   兩者同列，但各自採「標題在上、控制項在下」，
+   避免標籤被擠成直排。
+*/
+@media (max-width: 600px) {
+
+  #cloud-sync-card + .card > .form-group:nth-child(1),
+  #cloud-sync-card + .card > .form-group:nth-child(2) {
+    display: inline-flex !important;
+    flex-direction: column !important;
+    vertical-align: top !important;
+    box-sizing: border-box !important;
+    width: calc(50% - 4px) !important;
+    margin-bottom: 7px !important;
+  }
+
+  #cloud-sync-card + .card > .form-group:nth-child(1) {
+    margin-right: 6px !important;
+  }
+
+  #cloud-sync-card + .card > .form-group:nth-child(2) {
+    margin-right: 0 !important;
+  }
+
+  #cloud-sync-card + .card > .form-group:nth-child(1) label,
+  #cloud-sync-card + .card > .form-group:nth-child(2) label {
+    display: block !important;
+    width: 100% !important;
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+    color: #53657a !important;
+    margin: 0 0 3px !important;
+  }
+
+  #cloud-sync-card + .card > .form-group:nth-child(1) input,
+  #cloud-sync-card + .card > .form-group:nth-child(2) select {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    min-height: 38px !important;
+    height: 38px !important;
+    padding: 6px 8px !important;
+    border-radius: 10px !important;
+    font-size: 15px !important;
+    border-color: #dce5ef !important;
+  }
+}
+</style>
+
 </head>
 <body>
 
