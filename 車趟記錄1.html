@@ -930,6 +930,411 @@ h2 {
 }
 </style>
 
+
+<style id="ui-master-final-20260814">
+@media (max-width:600px){
+  html,body{
+    margin:0!important;
+    padding:0!important;
+    width:100%!important;
+    overflow-x:hidden!important;
+    background:#f4f7fb!important;
+  }
+  .container{
+    width:100%!important;
+    max-width:none!important;
+    margin:0!important;
+    padding:0 0 70px!important;
+    box-sizing:border-box!important;
+  }
+
+  /* ===== HEADER: exactly the approved composition ===== */
+  #app-header{
+    width:100%!important;
+    min-height:70px!important;
+    padding:0 14px 0 18px!important;
+    box-sizing:border-box!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto auto!important;
+    align-items:center!important;
+    gap:7px!important;
+    background:linear-gradient(105deg,#132a61,#0d2457)!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+  }
+  #app-header .app-title{
+    min-width:0!important;
+    display:flex!important;
+    align-items:center!important;
+    gap:8px!important;
+    color:#fff!important;
+    font-size:24px!important;
+    font-weight:900!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+  }
+  #app-header .app-title-icon{
+    flex:0 0 auto!important;
+    font-size:27px!important;
+  }
+  #header-sync,#header-menu{
+    position:static!important;
+    width:auto!important;
+    height:auto!important;
+    margin:0!important;
+    padding:5px!important;
+    border:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+  }
+  #header-sync{
+    display:flex!important;
+    align-items:center!important;
+    gap:4px!important;
+    color:#32d987!important;
+    font-size:14px!important;
+    font-weight:800!important;
+    white-space:nowrap!important;
+  }
+  #header-sync .header-cloud{
+    font-size:25px!important;
+    color:#edf5ff!important;
+  }
+  #header-menu{
+    color:#fff!important;
+    font-size:29px!important;
+    line-height:1!important;
+  }
+
+  /* Cloud/date utility is a popover only; it must never sit on top of the header. */
+  #app-utility-panel{
+    display:none!important;
+    position:relative!important;
+    z-index:10!important;
+    margin:8px 14px!important;
+    padding:10px!important;
+    border-radius:15px!important;
+    background:#eef3fa!important;
+    box-sizing:border-box!important;
+  }
+  #app-utility-panel.open{display:block!important}
+  #app-utility-panel .utility-date{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    gap:10px!important;
+    margin:0 0 8px!important;
+    padding:10px 12px!important;
+    background:#fff!important;
+    border:1px solid #dfe6ef!important;
+    border-radius:12px!important;
+  }
+  #app-utility-panel .utility-date span{
+    font-size:14px!important;
+    font-weight:800!important;
+    color:#53657a!important;
+  }
+  #app-utility-panel .utility-date input{
+    width:auto!important;
+    min-width:145px!important;
+    height:38px!important;
+    box-sizing:border-box!important;
+    padding:5px 8px!important;
+    border-radius:9px!important;
+    font-size:15px!important;
+  }
+  #cloud-sync-card{
+    margin:0!important;
+    padding:12px!important;
+    border-radius:13px!important;
+  }
+
+  /* Flatten accidental nested cards; preserve their contents/functions. */
+  .container > .card > .card{
+    margin:0!important;
+    padding:0!important;
+    border:0!important;
+    border-radius:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+  }
+
+  /* ===== MAIN WORK CARD ===== */
+  .container > .card{
+    width:calc(100% - 28px)!important;
+    margin:12px 14px 10px!important;
+    padding:14px!important;
+    box-sizing:border-box!important;
+    border-radius:20px!important;
+    background:#fff!important;
+    border:1px solid #e0e7ef!important;
+    box-shadow:0 5px 18px rgba(20,44,80,.07)!important;
+  }
+
+  /* ===== TRUCK ROW ===== */
+  .ton-group{
+    width:100%!important;
+    min-height:76px!important;
+    height:76px!important;
+    margin:0 0 18px!important;
+    padding:9px 12px 9px 16px!important;
+    box-sizing:border-box!important;
+    display:grid!important;
+    grid-template-columns:50px minmax(0,1fr) 142px!important;
+    align-items:center!important;
+    gap:10px!important;
+    border:1px solid #e0e6ee!important;
+    border-radius:16px!important;
+    background:#fff!important;
+    box-shadow:0 3px 10px rgba(23,42,70,.05)!important;
+  }
+  .ton-title{
+    display:contents!important;
+  }
+  .ton-title .ton-icon{
+    grid-column:1!important;
+    width:50px!important;
+    height:50px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    border-radius:50%!important;
+    background:#eaf2ff!important;
+    font-size:25px!important;
+  }
+  .ton-title strong{
+    grid-column:2!important;
+    font-size:18px!important;
+    line-height:1.1!important;
+    white-space:nowrap!important;
+    color:#182238!important;
+  }
+  #ton{
+    grid-column:3!important;
+    width:100%!important;
+    height:48px!important;
+    min-height:48px!important;
+    margin:0!important;
+    padding:0 10px!important;
+    box-sizing:border-box!important;
+    border-radius:11px!important;
+    font-size:16px!important;
+    font-weight:800!important;
+  }
+
+  /* ===== ROUTE ===== */
+  .route-group{
+    margin:0 0 10px!important;
+  }
+  .route-group > label{
+    display:block!important;
+    margin:0 0 10px!important;
+    font-size:21px!important;
+    line-height:1.1!important;
+    font-weight:900!important;
+    color:#182238!important;
+  }
+  .route-row{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) 52px minmax(0,1fr)!important;
+    align-items:center!important;
+    gap:8px!important;
+  }
+  .route-point{
+    height:160px!important;
+    min-height:160px!important;
+    box-sizing:border-box!important;
+    padding:14px!important;
+    border-radius:14px!important;
+    overflow:hidden!important;
+    display:flex!important;
+    flex-direction:column!important;
+    justify-content:flex-start!important;
+  }
+  .route-start{border:2px solid #78a9e5!important;background:linear-gradient(180deg,#fff 70%,#f6faff)!important}
+  .route-end{border:2px solid #8bcfb7!important;background:linear-gradient(180deg,#fff 70%,#f5fcf8)!important}
+  .route-point > span{
+    font-size:14px!important;
+    color:#667386!important;
+    margin-bottom:4px!important;
+  }
+  .route-point input{
+    width:100%!important;
+    height:42px!important;
+    min-height:42px!important;
+    margin:0!important;
+    padding:0!important;
+    border:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    font-size:20px!important;
+    font-weight:800!important;
+  }
+  .route-row .arrow-text{
+    width:52px!important;
+    height:52px!important;
+    margin:0!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    border-radius:50%!important;
+    background:#28b977!important;
+    color:#fff!important;
+    font-size:28px!important;
+    line-height:1!important;
+    box-shadow:0 4px 10px rgba(40,185,119,.18)!important;
+  }
+
+  #addStopBtn{
+    width:100%!important;
+    height:50px!important;
+    min-height:50px!important;
+    margin:10px 0 10px!important;
+    padding:0 10px!important;
+    border:1.5px dashed #c7d0da!important;
+    border-radius:12px!important;
+    background:#fff!important;
+    color:#145ec2!important;
+    font-size:16px!important;
+    font-weight:800!important;
+  }
+
+  /* ===== OPTIONS ===== */
+  .container > .card > .card > div[style*="grid-template-columns"],
+  .container > .card > div[style*="grid-template-columns"]{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+    gap:10px!important;
+    margin:0 0 10px!important;
+  }
+  .checkbox-group{
+    width:100%!important;
+    min-width:0!important;
+    height:62px!important;
+    min-height:62px!important;
+    margin:0!important;
+    padding:9px 12px!important;
+    box-sizing:border-box!important;
+    display:flex!important;
+    align-items:center!important;
+    gap:9px!important;
+    border-radius:14px!important;
+    background:#fff!important;
+  }
+  .checkbox-group:first-child{border:1.5px solid #dfd4f7!important}
+  .checkbox-group:last-child{border:1.5px solid #f2dfc4!important}
+  .checkbox-group input{
+    width:25px!important;
+    height:25px!important;
+    min-width:25px!important;
+    min-height:25px!important;
+    margin:0!important;
+  }
+  .checkbox-group span{
+    min-width:0!important;
+    font-size:16px!important;
+    line-height:1.15!important;
+    font-weight:800!important;
+    white-space:nowrap!important;
+  }
+  .checkbox-group:first-child span{color:#182238!important}
+  .checkbox-group:first-child span:before{
+    content:'⟳'!important;
+    color:#7650d4!important;
+    font-size:23px!important;
+    margin-right:7px!important;
+  }
+  .checkbox-group:last-child span{color:#e25f42!important}
+  .checkbox-group:last-child span:before{
+    content:'KG'!important;
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    width:29px!important;
+    height:29px!important;
+    margin-right:7px!important;
+    border-radius:7px!important;
+    background:#f18b25!important;
+    color:#fff!important;
+    font-size:10px!important;
+  }
+
+  /* ===== PRICE CARD ===== */
+  .result-display{
+    position:relative!important;
+    min-height:250px!important;
+    margin:0 0 12px!important;
+    padding:22px 18px!important;
+    box-sizing:border-box!important;
+    overflow:hidden!important;
+    border-radius:18px!important;
+    border:1.5px solid #d7e0ea!important;
+    background:linear-gradient(135deg,#fbfdff,#fffdf4)!important;
+  }
+  .result-display > p{
+    margin:0!important;
+    font-size:15px!important;
+    line-height:1.45!important;
+  }
+  .result-display > p:nth-of-type(2){
+    text-align:right!important;
+  }
+  .result-display hr{
+    margin:12px 0 18px!important;
+    border:0!important;
+    border-top:2px dashed #d3dbe4!important;
+  }
+  .result-display > div{
+    min-height:120px!important;
+  }
+  .result-display .net-total{
+    display:block!important;
+    margin-top:10px!important;
+    color:#16a35f!important;
+    font-size:58px!important;
+    line-height:.95!important;
+    font-weight:900!important;
+    letter-spacing:-1px!important;
+  }
+
+  #saveBtn,.container > .card .btn-save{
+    width:100%!important;
+    height:62px!important;
+    min-height:62px!important;
+    margin:0!important;
+    border-radius:15px!important;
+    background:linear-gradient(90deg,#159b73,#7bd517)!important;
+    color:#fff!important;
+    font-size:20px!important;
+    font-weight:900!important;
+    box-shadow:0 6px 16px rgba(21,155,115,.18)!important;
+  }
+
+  /* The old Excel export button is not part of the approved home UI. */
+  .container > .card .btn-export{display:none!important}
+
+  /* ===== LOWER SECTION CARDS: keep the approved structure ===== */
+  .app-section-bar{
+    width:calc(100% - 28px)!important;
+    min-height:72px!important;
+    margin:9px 14px 7px!important;
+    padding:10px 16px!important;
+    box-sizing:border-box!important;
+    border-radius:17px!important;
+    background:#fff!important;
+    border:1px solid #e0e7ef!important;
+    box-shadow:0 3px 12px rgba(23,42,70,.05)!important;
+  }
+  .app-section-bar .section-copy strong{
+    font-size:17px!important;
+  }
+  .app-section-bar .section-copy span{
+    font-size:11px!important;
+  }
+}
+</style>
+
 </head>
 <body>
 
@@ -952,7 +1357,6 @@ h2 {
 <div class="card">
 
 <div class="card">
-<div class="form-group"><label>選擇日期</label><input type="date" id="date"></div>
 <div class="form-group ton-group">
   <div class="ton-title"><span class="ton-icon">🚚</span><strong>車型噸數</strong></div>
   <select id="ton"><option value="1.5" selected>1.5 噸</option><option value="3.5">3.5 噸</option><option value="0.7">0.7 噸</option></select>
@@ -2679,5 +3083,32 @@ window.location.reload();
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',setupExactUI); else setupExactUI();
 })();
 </script>
+
+<script id="date-default-fix-20260814">
+(function(){
+  function setToday(){
+    var el=document.getElementById('date');
+    if(!el) return;
+    var now=new Date();
+    var y=now.getFullYear();
+    var m=String(now.getMonth()+1).padStart(2,'0');
+    var d=String(now.getDate()).padStart(2,'0');
+    el.value=y+'-'+m+'-'+d;
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',function(){
+      setToday();
+      setTimeout(setToday,100);
+    });
+  }else{
+    setToday();
+    setTimeout(setToday,100);
+  }
+  window.addEventListener('pageshow',function(){
+    setTimeout(setToday,100);
+  });
+})();
+</script>
+
 </body>
 </html>
