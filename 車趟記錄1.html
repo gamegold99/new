@@ -336,6 +336,135 @@ h2 {
 }
 </style>
 
+
+<style id="ui-optimization-v13">
+/* Mobile First UI v13：手機工作介面
+   以輸入車趟為主角；不新增底部導覽、不新增「我的」。
+   設定管理／歷史業績／回收桶仍維持既有架構。
+*/
+@media (max-width: 600px) {
+
+  /* ===== 1. 頂部：保留既有功能，視覺更乾淨 ===== */
+  h1 {
+    font-size: 24px !important;
+    line-height: 1.2 !important;
+    margin: 4px 0 8px !important;
+  }
+
+  /* ===== 2. 主車趟輸入卡：改成「工作區」而非厚重大卡 ===== */
+  #cloud-sync-card + .card {
+    padding: 10px 12px 12px !important;
+    border-radius: 16px !important;
+    box-shadow: 0 1px 7px rgba(0,0,0,.04) !important;
+  }
+
+  #cloud-sync-card + .card .form-group {
+    margin-bottom: 6px !important;
+  }
+
+  #cloud-sync-card + .card .form-group label {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    margin-bottom: 3px !important;
+  }
+
+  #cloud-sync-card + .card .form-group input,
+  #cloud-sync-card + .card .form-group select {
+    height: 40px !important;
+    min-height: 40px !important;
+    border-radius: 11px !important;
+    padding: 7px 10px !important;
+  }
+
+  /* ===== 3. 路線：起點 → 終點視覺層級提高 ===== */
+  #cloud-sync-card + .card h2 {
+    font-size: 19px !important;
+    line-height: 1.25 !important;
+    margin: 5px 0 7px !important;
+  }
+
+  #cloud-sync-card + .card .route-row,
+  #cloud-sync-card + .card .route-inputs {
+    gap: 7px !important;
+  }
+
+  #cloud-sync-card + .card .route-arrow,
+  #cloud-sync-card + .card .arrow {
+    font-size: 22px !important;
+    margin: 0 1px !important;
+  }
+
+  #cloud-sync-card + .card #addStopBtn {
+    min-height: 38px !important;
+    padding: 7px 9px !important;
+    border-radius: 11px !important;
+    margin: 4px 0 7px !important;
+  }
+
+  /* ===== 4. 來回／小超重：快速開關感 ===== */
+  #cloud-sync-card + .card .checkbox-group {
+    min-height: 42px !important;
+    height: 42px !important;
+    padding: 6px 9px !important;
+    margin: 4px 0 !important;
+    border-radius: 11px !important;
+    gap: 7px !important;
+  }
+
+  #cloud-sync-card + .card .checkbox-group input {
+    width: 19px !important;
+    height: 19px !important;
+    min-height: 19px !important;
+    flex: 0 0 19px !important;
+  }
+
+  #cloud-sync-card + .card .checkbox-group span {
+    font-size: 15px !important;
+    line-height: 1.1 !important;
+  }
+
+  /* ===== 5. 計價結果：資訊扁平化、金額當主角 ===== */
+  #cloud-sync-card + .card .result-display {
+    padding: 10px 12px !important;
+    margin: 7px 0 !important;
+    border-radius: 13px !important;
+  }
+
+  #cloud-sync-card + .card .result-display p {
+    margin: 3px 0 !important;
+    font-size: 14px !important;
+    line-height: 1.25 !important;
+  }
+
+  #cloud-sync-card + .card .result-display hr {
+    margin: 5px 0 !important;
+  }
+
+  #cloud-sync-card + .card .result-display .net-total {
+    font-size: 1.65rem !important;
+    line-height: 1 !important;
+    margin: 2px 0 0 !important;
+  }
+
+  /* ===== 6. 儲存：醒目但不肥厚 ===== */
+  #cloud-sync-card + .card .btn-save {
+    height: 48px !important;
+    min-height: 48px !important;
+    padding: 8px 12px !important;
+    margin-top: 5px !important;
+    border-radius: 12px !important;
+    font-size: 16px !important;
+  }
+
+  /* ===== 7. 管理區：維持現有結構，只讓視覺層級清楚 ===== */
+  #cloud-sync-card ~ .card h2 {
+    letter-spacing: .2px !important;
+  }
+
+  /* 不新增／不顯示底部導覽，不新增「我的」或獨立回收桶入口 */
+}
+</style>
+
 </head>
 <body>
 
