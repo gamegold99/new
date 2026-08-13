@@ -466,649 +466,6 @@ h2 {
 </style>
 
 
-<style id="ui-optimization-v15">
-/* Mobile First UI v15
-   重新整理視覺層級：
-   1) 雲端同步降為低矮狀態區
-   2) 日期／車型並排
-   3) 路線成為主角
-   4) 科技感採深藍＋藍綠＋紫橘點綴，不使用螢光綠大按鈕
-   5) 不新增「我的」、底部導覽、首頁管理快捷列
-   6) 不改 JS、資料、同步、管理功能架構
-*/
-@media (max-width: 600px) {
-
-  /* ===== 整體背景 ===== */
-  body {
-    background:
-      radial-gradient(circle at 100% 0%, rgba(47,128,237,.055), transparent 30%),
-      #f5f8fc !important;
-  }
-
-  .container {
-    padding-left: 8px !important;
-    padding-right: 8px !important;
-    padding-bottom: 70px !important;
-  }
-
-  /* ===== 標題：小而有識別，不做大色塊 ===== */
-  .container > h2 {
-    font-size: 22px !important;
-    line-height: 1.2 !important;
-    margin: 2px 0 8px !important;
-    padding: 4px 4px 8px !important;
-    color: #203650 !important;
-    letter-spacing: .5px !important;
-    text-align: center !important;
-    border-bottom: 2px solid rgba(47,128,237,.16) !important;
-  }
-
-  /* ===== 雲端同步：從「大卡片」降成狀態區 ===== */
-  #cloud-sync-card {
-    padding: 8px 10px !important;
-    margin-bottom: 8px !important;
-    border-radius: 13px !important;
-    border: 1px solid #e2eaf3 !important;
-    box-shadow: 0 2px 8px rgba(23,42,70,.045) !important;
-    background: rgba(255,255,255,.92) !important;
-  }
-
-  #cloud-sync-card > div:first-child {
-    min-height: 20px !important;
-  }
-
-  #cloud-sync-card > div:first-child strong {
-    font-size: 14px !important;
-    color: #304760 !important;
-  }
-
-  #cloud-status {
-    font-size: 11px !important;
-    font-weight: 700 !important;
-    white-space: nowrap !important;
-  }
-
-  #cloud-signed-in {
-    margin-top: 4px !important;
-    display: grid !important;
-    grid-template-columns: minmax(0,1fr) 78px 60px !important;
-    align-items: center !important;
-    gap: 5px !important;
-  }
-
-  #cloud-signed-in #cloud-user {
-    min-width: 0 !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-    font-size: 10px !important;
-    color: #728096 !important;
-    margin: 0 !important;
-  }
-
-  #cloud-signed-in .btn-save,
-  #cloud-signed-in .btn-outline {
-    width: auto !important;
-    min-height: 34px !important;
-    height: 34px !important;
-    padding: 5px 7px !important;
-    margin: 0 !important;
-    border-radius: 8px !important;
-    font-size: 12px !important;
-  }
-
-  #cloud-signed-in .btn-save {
-    background: #243b56 !important;
-    box-shadow: none !important;
-  }
-
-  /* 未登入狀態也保持緊湊 */
-  #cloud-signed-out {
-    margin-top: 4px !important;
-  }
-  #cloud-signed-out label {
-    font-size: 12px !important;
-    margin-bottom: 3px !important;
-  }
-  #cloud-signed-out input {
-    min-height: 36px !important;
-    height: 36px !important;
-  }
-  #cloud-signed-out .btn-save {
-    min-height: 38px !important;
-    height: 38px !important;
-    margin-top: 5px !important;
-  }
-
-  /* ===== 主車趟工作區 ===== */
-  #cloud-sync-card + .card {
-    padding: 11px 12px 12px !important;
-    margin-bottom: 9px !important;
-    border-radius: 17px !important;
-    border: 1px solid #e0e8f1 !important;
-    box-shadow: 0 5px 16px rgba(23,42,70,.065) !important;
-    background: #fff !important;
-  }
-
-  /* 日期 + 車型：並排，節省首屏高度 */
-  #cloud-sync-card + .card > .form-group:nth-child(1),
-  #cloud-sync-card + .card > .form-group:nth-child(2) {
-    display: inline-flex !important;
-    vertical-align: top !important;
-    width: calc(50% - 4px) !important;
-    box-sizing: border-box !important;
-    margin-bottom: 7px !important;
-  }
-
-  #cloud-sync-card + .card > .form-group:nth-child(1) {
-    margin-right: 6px !important;
-  }
-
-  #cloud-sync-card + .card > .form-group:nth-child(2) {
-    margin-right: 0 !important;
-  }
-
-  #cloud-sync-card + .card > .form-group:nth-child(1) label,
-  #cloud-sync-card + .card > .form-group:nth-child(2) label {
-    font-size: 12px !important;
-    color: #53657a !important;
-    margin-bottom: 3px !important;
-  }
-
-  #cloud-sync-card + .card > .form-group:nth-child(1) input,
-  #cloud-sync-card + .card > .form-group:nth-child(2) select {
-    width: 100% !important;
-    min-height: 38px !important;
-    height: 38px !important;
-    padding: 6px 8px !important;
-    border-radius: 10px !important;
-    font-size: 15px !important;
-    border-color: #dce5ef !important;
-  }
-
-  /* ===== 路線：主視覺焦點 ===== */
-  #cloud-sync-card + .card > .form-group:nth-child(3) {
-    margin-bottom: 6px !important;
-  }
-
-  #cloud-sync-card + .card > .form-group:nth-child(3) > label {
-    display: block !important;
-    font-size: 17px !important;
-    color: #203650 !important;
-    font-weight: 800 !important;
-    margin: 2px 0 5px !important;
-  }
-
-  #cloud-sync-card + .card .flex-row {
-    gap: 6px !important;
-  }
-
-  #cloud-sync-card + .card #start,
-  #cloud-sync-card + .card #dest1 {
-    min-height: 42px !important;
-    height: 42px !important;
-    border-radius: 12px !important;
-    font-size: 16px !important;
-    background: #fff !important;
-  }
-
-  #cloud-sync-card + .card #start {
-    border: 1.5px solid rgba(47,128,237,.52) !important;
-    box-shadow: 0 2px 7px rgba(47,128,237,.06) !important;
-  }
-
-  #cloud-sync-card + .card #dest1 {
-    border: 1.5px solid rgba(34,160,107,.52) !important;
-    box-shadow: 0 2px 7px rgba(34,160,107,.06) !important;
-  }
-
-  #cloud-sync-card + .card .arrow-text {
-    font-size: 20px !important;
-    color: #8fa0b3 !important;
-  }
-
-  /* 新增停靠點 */
-  #cloud-sync-card + .card #addStopBtn {
-    min-height: 37px !important;
-    height: 37px !important;
-    padding: 6px 9px !important;
-    margin: 5px 0 6px !important;
-    border-radius: 10px !important;
-    border: 1px dashed #b9c9da !important;
-    color: #3976b8 !important;
-    background: #f8fbff !important;
-    font-size: 14px !important;
-  }
-
-  /* ===== 來回／小超重：小型功能膠囊 ===== */
-  #cloud-sync-card + .card > div[style*="grid-template-columns"] {
-    gap: 7px !important;
-    margin: 6px 0 7px !important;
-  }
-
-  #cloud-sync-card + .card .checkbox-group {
-    min-height: 40px !important;
-    height: 40px !important;
-    padding: 5px 8px !important;
-    margin: 0 !important;
-    border-radius: 10px !important;
-    background: #fff !important;
-    border: 1px solid #e1e7ef !important;
-    box-shadow: none !important;
-  }
-
-  #cloud-sync-card + .card .checkbox-group:first-child {
-    border-color: rgba(118,87,217,.34) !important;
-    background: linear-gradient(90deg,rgba(118,87,217,.045),#fff) !important;
-  }
-
-  #cloud-sync-card + .card .checkbox-group:last-child {
-    border-color: rgba(232,137,45,.34) !important;
-    background: linear-gradient(90deg,rgba(232,137,45,.05),#fff) !important;
-  }
-
-  #cloud-sync-card + .card .checkbox-group input {
-    width: 18px !important;
-    height: 18px !important;
-    min-height: 18px !important;
-  }
-
-  #cloud-sync-card + .card .checkbox-group span {
-    font-size: 14px !important;
-    line-height: 1.05 !important;
-  }
-
-  /* ===== 計價：像小型狀態面板，不要厚重 ===== */
-  #cloud-sync-card + .card .result-display {
-    padding: 9px 11px !important;
-    margin: 6px 0 !important;
-    border-radius: 13px !important;
-    background: linear-gradient(135deg,#fff,#fffaf1) !important;
-    border: 1px solid rgba(232,137,45,.22) !important;
-    box-shadow: 0 2px 9px rgba(23,42,70,.04) !important;
-  }
-
-  #cloud-sync-card + .card .result-display p {
-    margin: 2px 0 !important;
-    font-size: 13px !important;
-    line-height: 1.25 !important;
-    color: #66758a !important;
-  }
-
-  #cloud-sync-card + .card .result-display hr {
-    margin: 4px 0 !important;
-  }
-
-  #cloud-sync-card + .card .result-display > div {
-    margin-top: 5px !important;
-    padding-top: 5px !important;
-  }
-
-  #cloud-sync-card + .card .result-display .net-total {
-    font-size: 1.62rem !important;
-    line-height: 1 !important;
-    margin: 2px 0 0 !important;
-    color: #178c67 !important;
-    font-weight: 900 !important;
-  }
-
-  /* ===== 儲存：深藍主按鈕，避免螢光綠 ===== */
-  #cloud-sync-card + .card > .btn-save {
-    height: 46px !important;
-    min-height: 46px !important;
-    margin: 5px 0 0 !important;
-    padding: 7px 12px !important;
-    border-radius: 11px !important;
-    font-size: 16px !important;
-    background: linear-gradient(135deg,#243b56,#2f80ed) !important;
-    box-shadow: 0 5px 12px rgba(47,128,237,.16) !important;
-  }
-
-  #cloud-sync-card + .card > .btn-save:active {
-    transform: translateY(1px) !important;
-  }
-
-  /* ===== 管理區：保持原本架構，不新增任何快捷列 ===== */
-  #cloud-sync-card ~ .bar {
-    border-radius: 14px !important;
-  }
-}
-</style>
-
-
-<style id="ui-optimization-v16">
-/* Mobile First UI v16
-   修正 v15 日期／車型欄位：
-   兩者同列，但各自採「標題在上、控制項在下」，
-   避免標籤被擠成直排。
-*/
-@media (max-width: 600px) {
-
-  #cloud-sync-card + .card > .form-group:nth-child(1),
-  #cloud-sync-card + .card > .form-group:nth-child(2) {
-    display: inline-flex !important;
-    flex-direction: column !important;
-    vertical-align: top !important;
-    box-sizing: border-box !important;
-    width: calc(50% - 4px) !important;
-    margin-bottom: 7px !important;
-  }
-
-  #cloud-sync-card + .card > .form-group:nth-child(1) {
-    margin-right: 6px !important;
-  }
-
-  #cloud-sync-card + .card > .form-group:nth-child(2) {
-    margin-right: 0 !important;
-  }
-
-  #cloud-sync-card + .card > .form-group:nth-child(1) label,
-  #cloud-sync-card + .card > .form-group:nth-child(2) label {
-    display: block !important;
-    width: 100% !important;
-    font-size: 12px !important;
-    line-height: 1.2 !important;
-    color: #53657a !important;
-    margin: 0 0 3px !important;
-  }
-
-  #cloud-sync-card + .card > .form-group:nth-child(1) input,
-  #cloud-sync-card + .card > .form-group:nth-child(2) select {
-    display: block !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-    min-height: 38px !important;
-    height: 38px !important;
-    padding: 6px 8px !important;
-    border-radius: 10px !important;
-    font-size: 15px !important;
-    border-color: #dce5ef !important;
-  }
-}
-</style>
-
-
-<style id="ui-optimization-v18">
-/* v18：以目前正常版本為基準，只做 UI 排版／視覺修正。
-   不移動 DOM、不改 JS、不改資料、不改同步邏輯。
-   針對 v17 的錯誤：同步區重疊、車型欄位被擠壞。
-*/
-@media (max-width:600px){
-
-  body{
-    background:#f5f8fc !important;
-    padding:0 !important;
-  }
-
-  .container{
-    max-width:100% !important;
-    padding:0 10px 50px !important;
-  }
-
-  /* ===== 頂部標題：只負責標題，不把同步區硬塞進來 ===== */
-  .container > h2{
-    margin:0 -10px 8px !important;
-    padding:14px 16px !important;
-    min-height:58px !important;
-    box-sizing:border-box !important;
-    display:flex !important;
-    align-items:center !important;
-    justify-content:flex-start !important;
-    background:linear-gradient(115deg,#142957,#1d3970) !important;
-    color:#fff !important;
-    border:0 !important;
-    border-radius:0 0 14px 14px !important;
-    box-shadow:0 4px 12px rgba(20,41,87,.16) !important;
-    font-size:23px !important;
-    line-height:1.15 !important;
-    letter-spacing:.3px !important;
-    text-align:left !important;
-  }
-
-  /* ===== 雲端同步：保留原功能，縮成正常狀態卡，絕不與標題重疊 ===== */
-  #cloud-sync-card{
-    position:static !important;
-    width:auto !important;
-    min-height:0 !important;
-    margin:0 0 8px !important;
-    padding:7px 9px !important;
-    box-sizing:border-box !important;
-    border-radius:12px !important;
-    border:1px solid #dfe7f0 !important;
-    background:#fff !important;
-    color:inherit !important;
-    box-shadow:0 2px 8px rgba(20,45,80,.05) !important;
-  }
-
-  #cloud-sync-card > div:first-child{
-    min-height:20px !important;
-    justify-content:space-between !important;
-  }
-  #cloud-sync-card > div:first-child strong{
-    display:block !important;
-    font-size:14px !important;
-    color:#304760 !important;
-  }
-  #cloud-status{
-    font-size:12px !important;
-    font-weight:800 !important;
-    color:#1ca36d !important;
-    white-space:nowrap !important;
-  }
-  #cloud-signed-in{
-    margin-top:4px !important;
-    display:grid !important;
-    grid-template-columns:minmax(0,1fr) 78px 58px !important;
-    gap:5px !important;
-    align-items:center !important;
-  }
-  #cloud-signed-in #cloud-user{
-    display:block !important;
-    min-width:0 !important;
-    overflow:hidden !important;
-    text-overflow:ellipsis !important;
-    white-space:nowrap !important;
-    font-size:10px !important;
-    color:#728096 !important;
-    margin:0 !important;
-  }
-  #cloud-signed-in .btn-save,
-  #cloud-signed-in .btn-outline{
-    width:auto !important;
-    min-height:32px !important;
-    height:32px !important;
-    padding:4px 6px !important;
-    margin:0 !important;
-    border-radius:8px !important;
-    font-size:11px !important;
-  }
-  #cloud-signed-in .btn-save{
-    background:#243b56 !important;
-    color:#fff !important;
-    box-shadow:none !important;
-  }
-
-  /* ===== 主輸入卡 ===== */
-  #cloud-sync-card + .card{
-    margin:0 0 9px !important;
-    padding:10px 12px 12px !important;
-    border-radius:18px !important;
-    border:1px solid #e0e8f1 !important;
-    background:#fff !important;
-    box-shadow:0 5px 16px rgba(20,45,80,.065) !important;
-  }
-
-  /* 日期＋車型：同列，標題在上、控制項在下。
-     用既有 DOM 順序，不改 HTML。 */
-  #cloud-sync-card + .card > .form-group:nth-child(1),
-  #cloud-sync-card + .card > .form-group:nth-child(2){
-    display:inline-flex !important;
-    flex-direction:column !important;
-    vertical-align:top !important;
-    box-sizing:border-box !important;
-    width:calc(50% - 4px) !important;
-    margin:0 0 7px !important;
-  }
-  #cloud-sync-card + .card > .form-group:nth-child(1){
-    margin-right:6px !important;
-  }
-  #cloud-sync-card + .card > .form-group:nth-child(2){
-    margin-right:0 !important;
-  }
-  #cloud-sync-card + .card > .form-group:nth-child(1) label,
-  #cloud-sync-card + .card > .form-group:nth-child(2) label{
-    display:block !important;
-    width:100% !important;
-    margin:0 0 3px !important;
-    font-size:12px !important;
-    line-height:1.2 !important;
-    color:#53657a !important;
-    font-weight:700 !important;
-  }
-  #cloud-sync-card + .card > .form-group:nth-child(1) input,
-  #cloud-sync-card + .card > .form-group:nth-child(2) select{
-    width:100% !important;
-    height:40px !important;
-    min-height:40px !important;
-    box-sizing:border-box !important;
-    padding:6px 9px !important;
-    border-radius:11px !important;
-    font-size:15px !important;
-    border-color:#dce5ef !important;
-  }
-
-  /* ===== 路線 ===== */
-  #cloud-sync-card + .card > .form-group:nth-child(3){
-    margin:1px 0 6px !important;
-  }
-  #cloud-sync-card + .card > .form-group:nth-child(3) > label{
-    display:block !important;
-    margin:2px 0 6px !important;
-    font-size:18px !important;
-    line-height:1.2 !important;
-    font-weight:800 !important;
-    color:#203650 !important;
-  }
-  #cloud-sync-card + .card .flex-row{
-    gap:7px !important;
-    align-items:center !important;
-  }
-  #cloud-sync-card + .card #start,
-  #cloud-sync-card + .card #dest1{
-    height:52px !important;
-    min-height:52px !important;
-    box-sizing:border-box !important;
-    border-radius:14px !important;
-    padding:9px 12px !important;
-    font-size:17px !important;
-    background:#fff !important;
-  }
-  #cloud-sync-card + .card #start{
-    border:1.6px solid #6ea4e8 !important;
-    box-shadow:inset 0 -9px 0 rgba(47,128,237,.025) !important;
-  }
-  #cloud-sync-card + .card #dest1{
-    border:1.6px solid #70c9a5 !important;
-    box-shadow:inset 0 -9px 0 rgba(34,160,107,.025) !important;
-  }
-  #cloud-sync-card + .card .arrow-text{
-    flex:0 0 auto !important;
-    font-size:21px !important;
-    color:#2fbf7a !important;
-  }
-
-  #cloud-sync-card + .card #addStopBtn{
-    width:100% !important;
-    height:39px !important;
-    min-height:39px !important;
-    margin:5px 0 6px !important;
-    padding:6px 9px !important;
-    border-radius:11px !important;
-    border:1px dashed #bdcbd9 !important;
-    background:#fff !important;
-    color:#1760c5 !important;
-    font-size:14px !important;
-  }
-
-  /* ===== 來回／小超重 ===== */
-  #cloud-sync-card + .card > div[style*="grid-template-columns"]{
-    gap:7px !important;
-    margin:5px 0 7px !important;
-  }
-  #cloud-sync-card + .card .checkbox-group{
-    min-height:43px !important;
-    height:43px !important;
-    padding:6px 9px !important;
-    margin:0 !important;
-    border-radius:11px !important;
-    background:#fff !important;
-    border:1px solid #e0e6ef !important;
-    box-shadow:none !important;
-  }
-  #cloud-sync-card + .card .checkbox-group:first-child{
-    border-color:rgba(118,87,217,.28) !important;
-    background:linear-gradient(90deg,rgba(118,87,217,.045),#fff) !important;
-  }
-  #cloud-sync-card + .card .checkbox-group:last-child{
-    border-color:rgba(232,137,45,.28) !important;
-    background:linear-gradient(90deg,rgba(232,137,45,.045),#fff) !important;
-  }
-  #cloud-sync-card + .card .checkbox-group input{
-    width:18px !important;
-    height:18px !important;
-    min-height:18px !important;
-  }
-  #cloud-sync-card + .card .checkbox-group span{
-    font-size:14px !important;
-    line-height:1.1 !important;
-  }
-
-  /* ===== 計價資訊 ===== */
-  #cloud-sync-card + .card .result-display{
-    padding:10px 12px !important;
-    margin:6px 0 !important;
-    border-radius:14px !important;
-    background:linear-gradient(135deg,#fff,#fffaf0) !important;
-    border:1px solid #eadfc8 !important;
-    box-shadow:none !important;
-  }
-  #cloud-sync-card + .card .result-display p{
-    margin:2px 0 !important;
-    font-size:14px !important;
-    line-height:1.3 !important;
-  }
-  #cloud-sync-card + .card .result-display > div{
-    margin-top:5px !important;
-    padding-top:5px !important;
-  }
-  #cloud-sync-card + .card .result-display .net-total{
-    font-size:2.05rem !important;
-    line-height:1 !important;
-    margin-top:2px !important;
-    color:#16a064 !important;
-    font-weight:900 !important;
-  }
-
-  /* ===== 儲存：沿用確認圖的綠色主按鈕，但不過度放大 ===== */
-  #cloud-sync-card + .card > .btn-save{
-    width:100% !important;
-    height:46px !important;
-    min-height:46px !important;
-    margin:5px 0 0 !important;
-    padding:7px 12px !important;
-    border-radius:12px !important;
-    font-size:16px !important;
-    background:linear-gradient(90deg,#159b73,#55c91d) !important;
-    box-shadow:0 5px 12px rgba(21,155,115,.14) !important;
-  }
-
-  /* 設定／歷史：只套相同視覺語言，不改結構 */
-  #cloud-sync-card ~ .bar{
-    border-radius:13px !important;
-  }
-}
-</style>
-
 <style id="ui-exact-v19">
 /* v19 — exact UI implementation based on user-confirmed reference image.
    UI-only: existing IDs, handlers, data and calculation logic retained. */
@@ -1207,6 +564,325 @@ h2 {
 }
 
 </style>
+
+<style id="ui-optimization-v20">
+/* v20: screenshot-driven mobile layout correction; CSS only. */
+@media (max-width: 600px) {
+  :root { --ui-gutter: 14px; }
+
+  body {
+    overflow-x: hidden !important;
+    background: #f4f7fb !important;
+  }
+
+  /* Header: title stays independent from cloud controls. */
+  .container > h2 {
+    position: relative !important;
+    z-index: 2 !important;
+    margin: 0 0 10px !important;
+    padding: 12px 14px !important;
+    min-height: 56px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    background: linear-gradient(110deg,#102653,#193b82) !important;
+    color: #fff !important;
+    border: 0 !important;
+    border-radius: 0 0 14px 14px !important;
+    font-size: 22px !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+  }
+
+  #cloud-sync-card {
+    position: relative !important;
+    z-index: 1 !important;
+    margin: 0 var(--ui-gutter) 10px !important;
+    padding: 8px 10px !important;
+    border-radius: 12px !important;
+    background: rgba(255,255,255,.96) !important;
+    border: 1px solid #e0e8f2 !important;
+    box-shadow: 0 2px 8px rgba(24,49,80,.05) !important;
+  }
+
+  #cloud-sync-card > div:first-child {
+    min-height: 22px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+  }
+
+  #cloud-sync-card > div:first-child strong {
+    font-size: 14px !important;
+    white-space: nowrap !important;
+  }
+
+  #cloud-status {
+    font-size: 11px !important;
+    white-space: nowrap !important;
+  }
+
+  #cloud-signed-in {
+    margin-top: 5px !important;
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) 82px 60px !important;
+    gap: 5px !important;
+    align-items: center !important;
+  }
+
+  #cloud-signed-in #cloud-user {
+    min-width: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    font-size: 10px !important;
+  }
+
+  #cloud-signed-in .btn-save,
+  #cloud-signed-in .btn-outline {
+    width: auto !important;
+    min-height: 34px !important;
+    height: 34px !important;
+    margin: 0 !important;
+    padding: 4px 6px !important;
+    font-size: 12px !important;
+    border-radius: 8px !important;
+  }
+
+  /* Main work card */
+  #cloud-sync-card + .card {
+    margin: 0 var(--ui-gutter) 10px !important;
+    padding: 12px !important;
+    border-radius: 18px !important;
+    box-sizing: border-box !important;
+    background: #fff !important;
+    border: 1px solid #e2e9f2 !important;
+    box-shadow: 0 4px 14px rgba(25,48,76,.055) !important;
+  }
+
+  /* Date + truck: actual two-column row. */
+  #cloud-sync-card + .card > .form-group:nth-child(1),
+  #cloud-sync-card + .card > .form-group:nth-child(2) {
+    display: inline-flex !important;
+    flex-direction: column !important;
+    vertical-align: top !important;
+    width: calc(50% - 5px) !important;
+    box-sizing: border-box !important;
+    margin: 0 0 8px !important;
+  }
+
+  #cloud-sync-card + .card > .form-group:nth-child(1) {
+    margin-right: 6px !important;
+  }
+
+  #cloud-sync-card + .card > .form-group:nth-child(1) label,
+  #cloud-sync-card + .card > .form-group:nth-child(2) label {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 0 4px !important;
+    font-size: 12px !important;
+    line-height: 1.15 !important;
+    color: #65758a !important;
+  }
+
+  #cloud-sync-card + .card > .form-group:nth-child(1) input,
+  #cloud-sync-card + .card > .form-group:nth-child(2) select {
+    width: 100% !important;
+    min-height: 40px !important;
+    height: 40px !important;
+    box-sizing: border-box !important;
+    padding: 7px 9px !important;
+    border-radius: 10px !important;
+    font-size: 15px !important;
+  }
+
+  /* Route */
+  #cloud-sync-card + .card > .form-group:nth-child(3) {
+    margin: 2px 0 6px !important;
+  }
+
+  #cloud-sync-card + .card > .form-group:nth-child(3) > label {
+    display: block !important;
+    margin: 0 0 6px !important;
+    font-size: 18px !important;
+    line-height: 1.2 !important;
+    font-weight: 800 !important;
+    color: #20344f !important;
+  }
+
+  #cloud-sync-card + .card .flex-row {
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) 38px minmax(0,1fr) !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+
+  #cloud-sync-card + .card #start,
+  #cloud-sync-card + .card #dest1 {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 72px !important;
+    min-height: 72px !important;
+    box-sizing: border-box !important;
+    padding: 10px 12px !important;
+    border-radius: 13px !important;
+    font-size: 16px !important;
+  }
+
+  #cloud-sync-card + .card #start { border: 2px solid #76a9e7 !important; }
+  #cloud-sync-card + .card #dest1 { border: 2px solid #86cbb2 !important; }
+
+  #cloud-sync-card + .card .arrow-text {
+    font-size: 24px !important;
+    line-height: 1 !important;
+    text-align: center !important;
+    color: #28b978 !important;
+  }
+
+  #cloud-sync-card + .card #addStopBtn {
+    width: 100% !important;
+    min-height: 44px !important;
+    height: 44px !important;
+    margin: 7px 0 8px !important;
+    box-sizing: border-box !important;
+    border-radius: 11px !important;
+    font-size: 15px !important;
+    color: #1760bd !important;
+    border: 1.5px dashed #b9c9d9 !important;
+    background: #fff !important;
+  }
+
+  /* Options: two stable columns, no icon/text collision. */
+  #cloud-sync-card + .card > div[style*="grid-template-columns"] {
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr) !important;
+    gap: 8px !important;
+    margin: 6px 0 8px !important;
+  }
+
+  #cloud-sync-card + .card .checkbox-group {
+    min-width: 0 !important;
+    min-height: 52px !important;
+    height: 52px !important;
+    box-sizing: border-box !important;
+    padding: 6px 9px !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    overflow: hidden !important;
+    border-radius: 12px !important;
+    background: #fff !important;
+  }
+
+  #cloud-sync-card + .card .checkbox-group input {
+    flex: 0 0 20px !important;
+    width: 20px !important;
+    height: 20px !important;
+    min-height: 20px !important;
+    margin: 0 !important;
+  }
+
+  #cloud-sync-card + .card .checkbox-group span {
+    min-width: 0 !important;
+    display: block !important;
+    white-space: normal !important;
+    font-size: 14px !important;
+    line-height: 1.15 !important;
+  }
+
+  /* Price card */
+  #cloud-sync-card + .card .result-display {
+    position: relative !important;
+    min-height: 170px !important;
+    box-sizing: border-box !important;
+    padding: 13px 14px !important;
+    margin: 6px 0 8px !important;
+    overflow: hidden !important;
+    border-radius: 14px !important;
+    border: 1px solid #d9e2ed !important;
+    background: linear-gradient(135deg,#f9fbff,#fffdf4) !important;
+  }
+
+  #cloud-sync-card + .card .result-display > p:first-child,
+  #cloud-sync-card + .card .result-display > p:nth-child(2) {
+    display: inline-block !important;
+    vertical-align: top !important;
+    width: 49% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+  }
+
+  #cloud-sync-card + .card .result-display > p:nth-child(2) {
+    text-align: right !important;
+  }
+
+  #cloud-sync-card + .card .result-display hr {
+    margin: 8px 0 !important;
+    border: 0 !important;
+    border-top: 2px dashed #d8dee7 !important;
+  }
+
+  #cloud-sync-card + .card .result-display > div {
+    position: relative !important;
+    min-height: 92px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #cloud-sync-card + .card .result-display .net-total {
+    display: block !important;
+    font-size: 2.35rem !important;
+    line-height: 1 !important;
+    margin: 7px 0 0 !important;
+    color: #18a566 !important;
+    font-weight: 900 !important;
+    white-space: nowrap !important;
+  }
+
+  /* Keep decorative calculator/coins away from the amount. */
+  #cloud-sync-card + .card .result-display img,
+  #cloud-sync-card + .card .result-display .result-icon,
+  #cloud-sync-card + .card .result-display .calculator-icon {
+    max-width: 90px !important;
+    max-height: 72px !important;
+    object-fit: contain !important;
+  }
+
+  /* Save */
+  #cloud-sync-card + .card > .btn-save {
+    width: 100% !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    margin: 0 !important;
+    border-radius: 12px !important;
+    font-size: 17px !important;
+    background: linear-gradient(105deg,#19a873,#78cf19) !important;
+    box-shadow: 0 5px 12px rgba(31,170,92,.14) !important;
+  }
+
+  /* Lower cards: compact and consistent. */
+  #cloud-sync-card ~ .bar {
+    margin-left: var(--ui-gutter) !important;
+    margin-right: var(--ui-gutter) !important;
+    margin-bottom: 8px !important;
+    min-height: 62px !important;
+    padding: 10px 14px !important;
+    box-sizing: border-box !important;
+    border-radius: 14px !important;
+    background: #fff !important;
+    border: 1px solid #dfe7f0 !important;
+    box-shadow: 0 2px 8px rgba(25,48,76,.04) !important;
+  }
+}
+</style>
+
 </head>
 <body>
 
