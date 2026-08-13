@@ -1109,27 +1109,138 @@ h2 {
 }
 </style>
 
+<style id="ui-exact-v19">
+/* v19 — exact UI implementation based on user-confirmed reference image.
+   UI-only: existing IDs, handlers, data and calculation logic retained. */
+@media (max-width: 600px) {
+  body { margin:0 !important; padding:0 !important; background:#f4f7fb !important; color:#172033 !important; }
+  .container { max-width:none !important; width:100% !important; padding:0 14px 28px !important; box-sizing:border-box !important; }
+
+  #app-header {
+    height:104px !important; margin:0 -14px 14px !important; padding:0 18px 0 22px !important;
+    box-sizing:border-box !important; display:flex !important; align-items:center !important; gap:12px !important;
+    background:linear-gradient(110deg,#071a4b 0%,#102b68 62%,#06163d 100%) !important;
+    color:#fff !important; border-radius:0 0 0 0 !important; box-shadow:0 5px 18px rgba(7,26,75,.22) !important;
+  }
+  .app-title { flex:1 1 auto !important; min-width:0 !important; display:flex !important; align-items:center !important; gap:9px !important; font-size:26px !important; line-height:1 !important; font-weight:900 !important; letter-spacing:.2px !important; white-space:nowrap !important; }
+  .app-title-icon { font-size:29px !important; filter:saturate(1.15) !important; }
+  #header-sync, #header-menu { border:0 !important; background:transparent !important; color:#fff !important; cursor:pointer !important; padding:6px !important; margin:0 !important; width:auto !important; box-shadow:none !important; }
+  #header-sync { display:flex !important; align-items:center !important; gap:5px !important; font-size:16px !important; font-weight:800 !important; color:#36d98a !important; white-space:nowrap !important; }
+  .header-cloud { color:#eaf3ff !important; font-size:27px !important; line-height:1 !important; }
+  #header-menu { font-size:30px !important; line-height:1 !important; color:#fff !important; }
+
+  #app-utility-panel { display:none !important; background:#eef3fa !important; border-radius:15px !important; padding:10px !important; margin-bottom:10px !important; }
+  #app-utility-panel.open { display:block !important; }
+  #app-utility-panel .utility-date { display:flex !important; align-items:center !important; justify-content:space-between !important; gap:10px !important; padding:10px 12px !important; background:#fff !important; border:1px solid #e1e8f1 !important; border-radius:12px !important; margin-bottom:8px !important; }
+  .utility-date > span { font-size:14px !important; font-weight:800 !important; color:#53657a !important; }
+  .utility-date input { width:auto !important; min-width:145px !important; height:38px !important; padding:5px 8px !important; border-radius:9px !important; font-size:15px !important; }
+  #cloud-sync-card { display:block !important; padding:12px !important; margin:0 !important; border-radius:13px !important; box-shadow:0 2px 10px rgba(23,42,70,.06) !important; }
+
+  /* Main card */
+  #app-utility-panel + .card { padding:14px !important; margin:0 !important; border-radius:22px !important; background:#fff !important; border:1px solid #e0e7f0 !important; box-shadow:0 6px 22px rgba(23,42,70,.08) !important; }
+
+  .ton-group { min-height:90px !important; margin:0 0 20px !important; padding:12px 12px 12px 16px !important; box-sizing:border-box !important; display:flex !important; align-items:center !important; gap:12px !important; background:#fff !important; border:1px solid #e2e8f0 !important; border-radius:18px !important; box-shadow:0 3px 12px rgba(23,42,70,.055) !important; }
+  .ton-title { display:flex !important; align-items:center !important; gap:12px !important; flex:1 1 auto !important; min-width:0 !important; }
+  .ton-title strong { font-size:22px !important; color:#111827 !important; white-space:nowrap !important; }
+  .ton-icon { width:56px !important; height:56px !important; border-radius:50% !important; display:flex !important; align-items:center !important; justify-content:center !important; background:#e9f1ff !important; font-size:29px !important; }
+  .ton-group select { width:150px !important; min-height:54px !important; height:54px !important; padding:8px 12px !important; border-radius:12px !important; border:1px solid #dce2ea !important; background:#fff !important; font-size:18px !important; font-weight:800 !important; color:#111827 !important; }
+
+  .route-group { margin:0 !important; }
+  .route-group > label { margin:0 0 10px !important; font-size:23px !important; line-height:1.15 !important; color:#111827 !important; font-weight:900 !important; }
+  .route-group > label::before { content:'📍'; margin-right:10px !important; font-size:23px !important; }
+  .route-row { display:grid !important; grid-template-columns:minmax(0,1fr) 54px minmax(0,1fr) !important; align-items:center !important; gap:8px !important; margin:0 !important; }
+  .route-point { position:relative !important; min-width:0 !important; height:158px !important; padding:16px 14px 10px !important; box-sizing:border-box !important; border-radius:15px !important; overflow:hidden !important; background:#fff !important; }
+  .route-point::after { content:'' !important; position:absolute !important; left:8px !important; right:8px !important; bottom:-7px !important; height:48px !important; opacity:.75 !important; border-top:2px dashed currentColor !important; border-radius:50% !important; transform:rotate(-4deg) !important; }
+  .route-start { color:#2f80ed !important; border:2px solid #74a8ef !important; background:linear-gradient(180deg,#fff 0%,#fff 72%,#f2f7ff 100%) !important; }
+  .route-end { color:#22a66d !important; border:2px solid #8ad4b5 !important; background:linear-gradient(180deg,#fff 0%,#fff 72%,#f1fbf6 100%) !important; }
+  .route-point > span { display:block !important; color:#4b5563 !important; font-size:14px !important; line-height:1.2 !important; margin-bottom:7px !important; }
+  .route-point input { width:100% !important; height:auto !important; min-height:0 !important; padding:0 !important; border:0 !important; background:transparent !important; box-shadow:none !important; font-size:22px !important; line-height:1.15 !important; font-weight:900 !important; color:#111827 !important; }
+  .route-point input:focus { box-shadow:none !important; border:0 !important; }
+  .route-start::before, .route-end::before { position:absolute !important; bottom:8px !important; font-size:23px !important; z-index:2 !important; }
+  .route-start::before { content:'📍' !important; left:30px !important; }
+  .route-end::before { content:'📍' !important; right:30px !important; }
+  .route-arrow { width:54px !important; height:54px !important; border-radius:50% !important; display:flex !important; align-items:center !important; justify-content:center !important; background:#25b873 !important; color:#fff !important; font-size:30px !important; font-weight:900 !important; box-shadow:0 5px 12px rgba(37,184,115,.18) !important; }
+
+  #extra-dests-container { margin-top:7px !important; }
+  #extra-dests-container .flex-row { margin:6px 0 !important; }
+  #extra-dests-container .extra-dest-input { min-height:44px !important; height:44px !important; }
+  .route-group > .btn-outline { min-height:46px !important; height:46px !important; margin:10px 0 12px !important; padding:8px 10px !important; border:1.5px dashed #cbd5e0 !important; border-radius:13px !important; background:#fff !important; color:#1559c7 !important; font-size:17px !important; font-weight:800 !important; }
+
+  #app-utility-panel + .card > div[style*="grid-template-columns"] { margin:0 0 12px !important; gap:10px !important; }
+  #app-utility-panel + .card .checkbox-group { min-height:62px !important; height:62px !important; padding:9px 12px !important; box-sizing:border-box !important; margin:0 !important; border-radius:14px !important; background:#fff !important; }
+  #app-utility-panel + .card .checkbox-group:first-child { border:1.5px solid #dfd4f7 !important; }
+  #app-utility-panel + .card .checkbox-group:last-child { border:1.5px solid #f2dfc4 !important; }
+  #app-utility-panel + .card .checkbox-group input { width:25px !important; height:25px !important; min-height:25px !important; flex:0 0 25px !important; }
+  #app-utility-panel + .card .checkbox-group span { font-size:17px !important; font-weight:800 !important; line-height:1.15 !important; }
+  #app-utility-panel + .card .checkbox-group:first-child span::before { content:'⟳' !important; color:#7650d4 !important; font-size:23px !important; margin-right:8px !important; }
+  #app-utility-panel + .card .checkbox-group:last-child span::before { content:'KG' !important; display:inline-flex !important; align-items:center !important; justify-content:center !important; width:29px !important; height:29px !important; margin-right:8px !important; border-radius:7px !important; background:#f18b25 !important; color:#fff !important; font-size:10px !important; }
+
+  .result-display { position:relative !important; min-height:250px !important; box-sizing:border-box !important; padding:24px 22px !important; margin:0 0 16px !important; border-radius:18px !important; border:1.5px solid #d9dfeb !important; background:linear-gradient(135deg,#f8fbff 0%,#fffdf6 70%,#fff 100%) !important; box-shadow:none !important; overflow:hidden !important; }
+  .result-display::after { content:'🧮'; position:absolute !important; right:24px !important; bottom:20px !important; font-size:70px !important; opacity:.9 !important; }
+  .result-display p { font-size:16px !important; line-height:1.35 !important; margin:0 !important; color:#536174 !important; }
+  .result-display p:first-child { display:inline-block !important; width:49% !important; }
+  .result-display p:nth-of-type(3) { display:inline-block !important; width:49% !important; text-align:right !important; }
+  .result-display .text-accent { color:#e7842a !important; }
+  .result-display > div { position:relative !important; margin-top:14px !important; padding-top:18px !important; border-top:2px dashed #d4dbe5 !important; z-index:1 !important; }
+  .result-display > div > span:first-child { font-size:22px !important; color:#111827 !important; font-weight:900 !important; }
+  .result-display .net-total { display:block !important; margin-top:12px !important; color:#16a35f !important; font-size:58px !important; line-height:.95 !important; font-weight:900 !important; letter-spacing:-1px !important; }
+  .result-display #km-info { display:none !important; }
+
+  #app-utility-panel + .card > .btn-save { min-height:64px !important; height:64px !important; margin:0 !important; border-radius:15px !important; font-size:20px !important; background:linear-gradient(90deg,#159b73 0%,#7bd517 100%) !important; box-shadow:0 6px 16px rgba(21,155,115,.18) !important; }
+
+  /* top-level section cards */
+  .app-section-bar { min-height:72px !important; box-sizing:border-box !important; margin:10px 0 7px !important; padding:10px 16px !important; border-radius:17px !important; background:#fff !important; border:1px solid #e0e7f0 !important; box-shadow:0 3px 12px rgba(23,42,70,.05) !important; }
+  .app-section-bar > span:last-child { font-size:25px !important; }
+  .section-copy { display:flex !important; flex-direction:column !important; gap:2px !important; min-width:0 !important; }
+  .section-copy strong { font-size:19px !important; color:#111827 !important; line-height:1.2 !important; }
+  .section-copy span { font-size:12px !important; color:#64748b !important; line-height:1.2 !important; }
+  #settingsManagement + .bar { margin-top:7px !important; }
+  #settingsManagement { border-radius:15px !important; }
+  #historyManagement { padding-top:0 !important; }
+  #historyManagement .bar { margin-top:0 !important; }
+
+  #managementFunctions { padding:8px !important; background:#fff !important; border-radius:15px !important; }
+  .management-link { display:flex !important; align-items:center !important; gap:12px !important; min-height:60px !important; padding:9px 10px !important; margin-bottom:7px !important; border:1px solid #e4e9f1 !important; border-radius:12px !important; background:#fff !important; }
+  .management-link > span { width:40px !important; text-align:center !important; font-size:25px !important; }
+  .management-link strong { display:block !important; font-size:15px !important; color:#172033 !important; }
+  .management-link small { display:block !important; margin-top:2px !important; color:#718096 !important; font-size:11px !important; }
+}
+
+</style>
 </head>
 <body>
 
 <div class="container">
-<h2>🚚 物流業績管理系統</h2>
+<header id="app-header">
+  <div class="app-title"><span class="app-title-icon">🚚</span><span>車趟管理系統</span></div>
+  <button type="button" id="header-sync" aria-label="開啟雲端同步設定"><span class="header-cloud">☁︎</span><span id="header-cloud-status">已同步</span></button>
+  <button type="button" id="header-menu" aria-label="更多選項">⋮</button>
+</header>
 
-<div class="card" id="cloud-sync-card">
+<div id="app-utility-panel" aria-hidden="true">
+  <div class="utility-date"><span>選擇日期</span><input type="date" id="date"></div>
+  <div class="card" id="cloud-sync-card">
 <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;"><strong style="color:var(--primary); font-size:18px;">☁️ 雲端同步</strong><span id="cloud-status" class="cloud-status">尚未登入</span></div>
 <div id="cloud-signed-out" style="margin-top:12px;"><label for="cloud-email">登入 Email</label><input type="email" id="cloud-email" autocomplete="email" inputmode="email" placeholder="name@example.com"><button type="button" class="btn btn-save" style="margin:12px 0 0;" onclick="window.TripCloud.sendOtp()">寄送登入連結</button></div>
 <div id="cloud-signed-in" style="display:none; margin-top:12px;"><div id="cloud-user" class="cloud-user"></div><button type="button" class="btn btn-save" style="margin-bottom:8px;" onclick="window.TripCloud.syncNow(true)">立即同步</button><button type="button" class="btn-outline" onclick="window.TripCloud.signOut()">登出</button></div>
+  </div>
 </div>
 
 <div class="card">
+
+<div class="card">
 <div class="form-group"><label>選擇日期</label><input type="date" id="date"></div>
-<div class="form-group">
-<label>車型噸數</label>
-<select id="ton"><option value="1.5" selected>1.5 噸</option><option value="3.5">3.5 噸</option><option value="0.7">0.7 噸</option></select>
+<div class="form-group ton-group">
+  <div class="ton-title"><span class="ton-icon">🚚</span><strong>車型噸數</strong></div>
+  <select id="ton"><option value="1.5" selected>1.5 噸</option><option value="3.5">3.5 噸</option><option value="0.7">0.7 噸</option></select>
 </div>
-<div class="form-group">
+<div class="form-group route-group">
 <label>運輸路線</label>
-<div class="flex-row"><input type="text" id="start" placeholder="起點" list="location-options"><span class="arrow-text">➡</span><input type="text" id="dest1" placeholder="終點" list="location-options"></div>
+<div class="route-row">
+  <div class="route-point route-start"><span>起點</span><input type="text" id="start" placeholder="" list="location-options"></div>
+  <span class="route-arrow">➜</span>
+  <div class="route-point route-end"><span>終點</span><input type="text" id="dest1" placeholder="" list="location-options"></div>
+</div>
 <div id="extra-dests-container"></div>
 <button type="button" class="btn-outline" onclick="addExtraDest()">＋ 新增停靠點 (每點 NT200元)</button>
 </div>
@@ -1154,8 +1265,8 @@ h2 {
 
 <datalist id="location-options"></datalist>
 
-<div class="bar" onclick="togglePanel('settingsManagement')">
-  <span>⚙️ 設定管理</span><span>▼</span>
+<div class="bar app-section-bar" onclick="togglePanel('settingsManagement')">
+  <div class="section-copy"><strong>⚙️ 設定管理</strong><span>路線管理、費率設定、系統設定、資料備份等</span></div><span class="section-arrow">▼</span>
 </div>
 
 <div id="settingsManagement" class="panel">
@@ -1247,8 +1358,8 @@ h2 {
 
 <datalist id="location-options"></datalist>
 
-<div class="bar" onclick="togglePanel('historyManagement')">
-  <span>📅 歷史車趟與業績統計</span><span>▼</span>
+<div class="bar app-section-bar" onclick="togglePanel('historyManagement')">
+  <div class="section-copy"><strong>📊 歷史車趟與業績統計</strong><span>查看車趟記錄、業績統計與收入分析</span></div><span class="section-arrow">▼</span>
 </div>
 
 <div id="historyManagement" class="panel" style="margin-top:-2px; display:none;">
@@ -1260,6 +1371,15 @@ h2 {
 </div>
 </div>
 
+
+<div class="bar app-section-bar" onclick="togglePanel('managementFunctions')">
+  <div class="section-copy"><strong>🧰 管理功能</strong><span>備份、雲端還原、地點與回收桶</span></div><span class="section-arrow">▼</span>
+</div>
+<div id="managementFunctions" class="panel management-panel">
+  <div class="management-link" onclick="togglePanel('dataManagement'); togglePanel('settingsManagement');"><span>☁️</span><div><strong>資料備份與雲端還原</strong><small>備份、恢復與雲端歷史資料</small></div></div>
+  <div class="management-link" onclick="togglePanel('locationManagement'); togglePanel('settingsManagement');"><span>📍</span><div><strong>地點管理</strong><small>管理常用地點與自動完成清單</small></div></div>
+  <div class="management-link" onclick="togglePanel('trashManagement'); togglePanel('settingsManagement');"><span>🗑️</span><div><strong>資源回收桶</strong><small>查看與還原刪除的車趟</small></div></div>
+</div>
 
 </div>
 
@@ -2811,6 +2931,30 @@ pwaReloading = true;
 window.location.reload();
 });
 }
+</script>
+<script id="ui-exact-v19-js">
+(function(){
+  function setupExactUI(){
+    var utility=document.getElementById('app-utility-panel');
+    var menu=document.getElementById('header-menu');
+    var sync=document.getElementById('header-sync');
+    var cloudStatus=document.getElementById('cloud-status');
+    var headerStatus=document.getElementById('header-cloud-status');
+    if(!utility) return;
+    function toggleUtility(){
+      var open=utility.classList.toggle('open');
+      utility.setAttribute('aria-hidden', open ? 'false' : 'true');
+    }
+    if(menu) menu.addEventListener('click', toggleUtility);
+    if(sync) sync.addEventListener('click', toggleUtility);
+    if(cloudStatus && headerStatus){
+      var syncHeader=function(){ headerStatus.textContent=(cloudStatus.textContent||'').trim() || '已同步'; };
+      syncHeader();
+      new MutationObserver(syncHeader).observe(cloudStatus,{childList:true,characterData:true,subtree:true});
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',setupExactUI); else setupExactUI();
+})();
 </script>
 </body>
 </html>
