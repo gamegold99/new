@@ -827,6 +827,154 @@ h2 {
 }
 </style>
 
+<style id="ui-optimization-v17">
+/* v17 — 以使用者確認的 UI 模擬圖為視覺基準；只改呈現，不改功能／資料／同步。 */
+@media (max-width:600px){
+  body{background:#f5f8fc!important;}
+  .container{max-width:100%!important;padding:0 10px 50px!important;}
+
+  /* ===== 頂部：深藍科技感標題列 + 雲端狀態 ===== */
+  .container>h2{
+    margin:0 -10px!important;padding:15px 18px 12px!important;
+    min-height:62px!important;box-sizing:border-box!important;
+    display:flex!important;align-items:center!important;
+    background:linear-gradient(115deg,#12244c,#182b5b 58%,#0d1e43)!important;
+    color:#fff!important;border-radius:0!important;border:0!important;
+    font-size:24px!important;line-height:1!important;letter-spacing:.5px!important;
+    box-shadow:0 4px 12px rgba(15,34,70,.18)!important;
+  }
+  #cloud-sync-card{
+    position:absolute!important;top:0!important;right:8px!important;
+    width:43%!important;min-height:62px!important;box-sizing:border-box!important;
+    margin:0!important;padding:13px 9px 8px!important;
+    border:0!important;border-radius:0!important;box-shadow:none!important;
+    background:transparent!important;color:#fff!important;z-index:3!important;
+  }
+  #cloud-sync-card>div:first-child{min-height:20px!important;justify-content:flex-end!important;gap:5px!important;}
+  #cloud-sync-card>div:first-child strong{display:none!important;}
+  #cloud-status{font-size:13px!important;font-weight:800!important;color:#32d58b!important;white-space:nowrap!important;}
+  #cloud-signed-in{margin-top:4px!important;display:flex!important;justify-content:flex-end!important;align-items:center!important;gap:4px!important;}
+  #cloud-signed-in #cloud-user{display:none!important;}
+  #cloud-signed-in .btn-save,#cloud-signed-in .btn-outline{
+    width:auto!important;min-height:29px!important;height:29px!important;padding:4px 7px!important;
+    margin:0!important;border-radius:7px!important;font-size:11px!important;
+  }
+  #cloud-signed-in .btn-save{background:rgba(255,255,255,.12)!important;color:#fff!important;box-shadow:none!important;border:1px solid rgba(255,255,255,.18)!important;}
+  #cloud-signed-in .btn-outline{color:#fff!important;border-color:rgba(255,255,255,.35)!important;background:transparent!important;}
+  #cloud-signed-out{display:none!important;}
+
+  /* ===== 主工作卡 ===== */
+  #cloud-sync-card + .card{
+    margin:12px 0 9px!important;padding:10px 12px 12px!important;
+    border-radius:18px!important;border:1px solid #e2e8f0!important;
+    background:rgba(255,255,255,.97)!important;box-shadow:0 5px 18px rgba(20,45,80,.07)!important;
+  }
+
+  /* 車型：模擬圖的單列控制卡 */
+  #cloud-sync-card + .card>.form-group:nth-child(2){
+    display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:space-between!important;
+    min-height:62px!important;margin:0 0 11px!important;padding:9px 8px!important;
+    border:1px solid #e4e9f0!important;border-radius:15px!important;
+    background:linear-gradient(90deg,#fff,#fbfdff)!important;box-shadow:0 2px 8px rgba(20,45,80,.04)!important;
+  }
+  #cloud-sync-card + .card>.form-group:nth-child(2) label{
+    margin:0!important;font-size:19px!important;font-weight:800!important;color:#17233a!important;
+  }
+  #cloud-sync-card + .card>.form-group:nth-child(2) label:before{
+    content:'🚚';display:inline-flex;align-items:center;justify-content:center;
+    width:42px;height:42px;margin-right:10px;border-radius:50%;font-size:22px;
+    background:#eaf2ff;vertical-align:middle;
+  }
+  #cloud-sync-card + .card>.form-group:nth-child(2) select{
+    width:45%!important;min-height:42px!important;height:42px!important;margin:0!important;
+    border-radius:11px!important;border:1px solid #dfe4ec!important;background:#fff!important;
+    font-size:16px!important;font-weight:700!important;text-align:center!important;
+  }
+  /* 日期保留資料功能，但視覺降為緊湊次要資訊 */
+  #cloud-sync-card + .card>.form-group:nth-child(1){
+    display:flex!important;align-items:center!important;justify-content:flex-end!important;
+    height:22px!important;margin:0!important;padding:0 3px!important;
+  }
+  #cloud-sync-card + .card>.form-group:nth-child(1) label{font-size:11px!important;color:#8794a7!important;margin:0 5px 0 0!important;}
+  #cloud-sync-card + .card>.form-group:nth-child(1) input{
+    width:112px!important;height:24px!important;min-height:24px!important;padding:2px 5px!important;
+    border:0!important;background:transparent!important;color:#66758a!important;font-size:11px!important;
+  }
+
+  /* ===== 路線 ===== */
+  #cloud-sync-card + .card>.form-group:nth-child(3){margin:0!important;}
+  #cloud-sync-card + .card>.form-group:nth-child(3)>label{
+    display:block!important;margin:7px 0 7px 8px!important;font-size:19px!important;font-weight:850!important;color:#17233a!important;
+  }
+  #cloud-sync-card + .card>.form-group:nth-child(3)>label:before{content:'📍';font-size:22px;margin-right:8px;}
+  #cloud-sync-card + .card .flex-row{display:grid!important;grid-template-columns:1fr 54px 1fr!important;gap:7px!important;align-items:center!important;}
+  #cloud-sync-card + .card #start,#cloud-sync-card + .card #dest1{
+    width:100%!important;box-sizing:border-box!important;min-height:108px!important;height:108px!important;
+    padding:25px 13px 10px!important;border-radius:14px!important;font-size:18px!important;font-weight:700!important;
+    background:linear-gradient(145deg,#fff,#f9fbff)!important;
+  }
+  #cloud-sync-card + .card #start{border:1.5px solid #5c9cf0!important;box-shadow:inset 0 -22px 0 rgba(73,131,232,.035)!important;}
+  #cloud-sync-card + .card #dest1{border:1.5px solid #70cf9d!important;box-shadow:inset 0 -22px 0 rgba(49,190,117,.035)!important;}
+  #cloud-sync-card + .card #start::placeholder,#cloud-sync-card + .card #dest1::placeholder{color:#5b6470!important;font-weight:500!important;}
+  #cloud-sync-card + .card .arrow-text{font-size:29px!important;color:#2fbd78!important;text-align:center!important;}
+  #cloud-sync-card + .card #addStopBtn{
+    width:100%!important;min-height:43px!important;height:43px!important;margin:8px 0!important;
+    border-radius:11px!important;border:1.5px dashed #cbd5e1!important;background:#fff!important;
+    color:#1559bd!important;font-size:15px!important;font-weight:700!important;
+  }
+
+  /* ===== 來回／超重 ===== */
+  #cloud-sync-card + .card>div[style*="grid-template-columns"]{gap:8px!important;margin:8px 0!important;}
+  #cloud-sync-card + .card .checkbox-group{
+    min-height:49px!important;height:49px!important;padding:7px 10px!important;margin:0!important;
+    border-radius:12px!important;background:#fff!important;box-shadow:none!important;
+  }
+  #cloud-sync-card + .card .checkbox-group:first-child{border:1px solid #d9c8f5!important;background:#fcfaff!important;}
+  #cloud-sync-card + .card .checkbox-group:last-child{border:1px solid #f1d8b8!important;background:#fffdf9!important;}
+  #cloud-sync-card + .card .checkbox-group span{font-size:15px!important;font-weight:800!important;}
+  #cloud-sync-card + .card .checkbox-group:first-child span{color:#6d42cf!important;}
+  #cloud-sync-card + .card .checkbox-group:last-child span{color:#e56d17!important;}
+  #cloud-sync-card + .card .checkbox-group input{width:19px!important;height:19px!important;min-height:19px!important;}
+
+  /* ===== 計價卡 ===== */
+  #cloud-sync-card + .card .result-display{
+    margin:9px 0!important;padding:14px 13px!important;border-radius:15px!important;
+    border:1px solid #d9ddea!important;background:linear-gradient(135deg,#fbfcff,#fffdf5)!important;
+    box-shadow:none!important;
+  }
+  #cloud-sync-card + .card .result-display p{font-size:14px!important;margin:2px 0!important;color:#4c5c70!important;}
+  #cloud-sync-card + .card .result-display hr{margin:7px 0!important;border-color:#d9dfe8!important;}
+  #cloud-sync-card + .card .result-display>div{margin-top:5px!important;padding-top:5px!important;}
+  #cloud-sync-card + .card .result-display>div>span:first-child{font-size:18px!important;color:#1c2433!important;}
+  #cloud-sync-card + .card .result-display .net-total{font-size:2.65rem!important;line-height:1!important;color:#19a45b!important;font-weight:900!important;}
+
+  /* ===== 儲存 ===== */
+  #cloud-sync-card + .card>.btn-save{
+    width:100%!important;height:54px!important;min-height:54px!important;margin:7px 0 0!important;
+    border-radius:13px!important;font-size:18px!important;font-weight:900!important;
+    background:linear-gradient(100deg,#169b74,#3dca16)!important;box-shadow:0 6px 14px rgba(37,178,83,.18)!important;
+  }
+
+  /* ===== 設定／歷史／管理：採模擬圖的資訊卡，但不展開底部功能 ===== */
+  #cloud-sync-card~.bar{
+    min-height:66px!important;margin:7px 0!important;padding:10px 15px!important;
+    border-radius:15px!important;border:1px solid #e0e6ee!important;background:#fff!important;
+    box-shadow:0 3px 10px rgba(20,45,80,.05)!important;font-size:17px!important;font-weight:800!important;
+  }
+  #cloud-sync-card~.bar:first-of-type span:first-child:before{content:'⚙️';margin-right:8px;}
+  #cloud-sync-card~.bar:last-of-type span:first-child:before{content:'📊';margin-right:8px;}
+  #cloud-sync-card~.bar span:last-child{font-size:23px!important;color:#24324a!important;}
+  #settingsManagement,#historyManagement{margin-top:0!important;}
+  #settingsManagement .bar,#historyManagement .bar{min-height:46px!important;font-size:14px!important;}
+
+  /* 管理功能存在於設定管理內，保持收合，不做圖片最底部四格 */
+  #settingsManagement .bar{display:none!important;}
+  #settingsManagement{display:none!important;}
+
+  /* 隱藏手動里程時不佔位 */
+  #km-manual-group[style*="display:none"]{display:none!important;}
+}
+</style>
 </head>
 <body>
 
