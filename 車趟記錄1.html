@@ -466,871 +466,193 @@ h2 {
 </style>
 
 
-<style id="ui-exact-v19">
-/* v19 — exact UI implementation based on user-confirmed reference image.
-   UI-only: existing IDs, handlers, data and calculation logic retained. */
+<style id="ui-optimization-v14">
+/* Mobile First UI v14
+   視覺升級：白底 + 深藍識別 + 藍/綠/紫/橘功能色。
+   僅調整 UI/CSS；不新增「我的」、底部導覽或首頁管理快捷列。
+   設定管理、歷史車趟與業績統計的功能架構不變。
+*/
 @media (max-width: 600px) {
-  body { margin:0 !important; padding:0 !important; background:#f4f7fb !important; color:#172033 !important; }
-  .container { max-width:none !important; width:100% !important; padding:0 14px 28px !important; box-sizing:border-box !important; }
 
-  #app-header {
-    height:104px !important; margin:0 -14px 14px !important; padding:0 18px 0 22px !important;
-    box-sizing:border-box !important; display:flex !important; align-items:center !important; gap:12px !important;
-    background:linear-gradient(110deg,#071a4b 0%,#102b68 62%,#06163d 100%) !important;
-    color:#fff !important; border-radius:0 0 0 0 !important; box-shadow:0 5px 18px rgba(7,26,75,.22) !important;
-  }
-  .app-title { flex:1 1 auto !important; min-width:0 !important; display:flex !important; align-items:center !important; gap:9px !important; font-size:26px !important; line-height:1 !important; font-weight:900 !important; letter-spacing:.2px !important; white-space:nowrap !important; }
-  .app-title-icon { font-size:29px !important; filter:saturate(1.15) !important; }
-  #header-sync, #header-menu { border:0 !important; background:transparent !important; color:#fff !important; cursor:pointer !important; padding:6px !important; margin:0 !important; width:auto !important; box-shadow:none !important; }
-  #header-sync { display:flex !important; align-items:center !important; gap:5px !important; font-size:16px !important; font-weight:800 !important; color:#36d98a !important; white-space:nowrap !important; }
-  .header-cloud { color:#eaf3ff !important; font-size:27px !important; line-height:1 !important; }
-  #header-menu { font-size:30px !important; line-height:1 !important; color:#fff !important; }
-
-  #app-utility-panel { display:none !important; background:#eef3fa !important; border-radius:15px !important; padding:10px !important; margin-bottom:10px !important; }
-  #app-utility-panel.open { display:block !important; }
-  #app-utility-panel .utility-date { display:flex !important; align-items:center !important; justify-content:space-between !important; gap:10px !important; padding:10px 12px !important; background:#fff !important; border:1px solid #e1e8f1 !important; border-radius:12px !important; margin-bottom:8px !important; }
-  .utility-date > span { font-size:14px !important; font-weight:800 !important; color:#53657a !important; }
-  .utility-date input { width:auto !important; min-width:145px !important; height:38px !important; padding:5px 8px !important; border-radius:9px !important; font-size:15px !important; }
-  #cloud-sync-card { display:block !important; padding:12px !important; margin:0 !important; border-radius:13px !important; box-shadow:0 2px 10px rgba(23,42,70,.06) !important; }
-
-  /* Main card */
-  #app-utility-panel + .card { padding:14px !important; margin:0 !important; border-radius:22px !important; background:#fff !important; border:1px solid #e0e7f0 !important; box-shadow:0 6px 22px rgba(23,42,70,.08) !important; }
-
-  .ton-group { min-height:90px !important; margin:0 0 20px !important; padding:12px 12px 12px 16px !important; box-sizing:border-box !important; display:flex !important; align-items:center !important; gap:12px !important; background:#fff !important; border:1px solid #e2e8f0 !important; border-radius:18px !important; box-shadow:0 3px 12px rgba(23,42,70,.055) !important; }
-  .ton-title { display:flex !important; align-items:center !important; gap:12px !important; flex:1 1 auto !important; min-width:0 !important; }
-  .ton-title strong { font-size:22px !important; color:#111827 !important; white-space:nowrap !important; }
-  .ton-icon { width:56px !important; height:56px !important; border-radius:50% !important; display:flex !important; align-items:center !important; justify-content:center !important; background:#e9f1ff !important; font-size:29px !important; }
-  .ton-group select { width:150px !important; min-height:54px !important; height:54px !important; padding:8px 12px !important; border-radius:12px !important; border:1px solid #dce2ea !important; background:#fff !important; font-size:18px !important; font-weight:800 !important; color:#111827 !important; }
-
-  .route-group { margin:0 !important; }
-  .route-group > label { margin:0 0 10px !important; font-size:23px !important; line-height:1.15 !important; color:#111827 !important; font-weight:900 !important; }
-  .route-group > label::before { content:'📍'; margin-right:10px !important; font-size:23px !important; }
-  .route-row { display:grid !important; grid-template-columns:minmax(0,1fr) 54px minmax(0,1fr) !important; align-items:center !important; gap:8px !important; margin:0 !important; }
-  .route-point { position:relative !important; min-width:0 !important; height:158px !important; padding:16px 14px 10px !important; box-sizing:border-box !important; border-radius:15px !important; overflow:hidden !important; background:#fff !important; }
-  .route-point::after { content:'' !important; position:absolute !important; left:8px !important; right:8px !important; bottom:-7px !important; height:48px !important; opacity:.75 !important; border-top:2px dashed currentColor !important; border-radius:50% !important; transform:rotate(-4deg) !important; }
-  .route-start { color:#2f80ed !important; border:2px solid #74a8ef !important; background:linear-gradient(180deg,#fff 0%,#fff 72%,#f2f7ff 100%) !important; }
-  .route-end { color:#22a66d !important; border:2px solid #8ad4b5 !important; background:linear-gradient(180deg,#fff 0%,#fff 72%,#f1fbf6 100%) !important; }
-  .route-point > span { display:block !important; color:#4b5563 !important; font-size:14px !important; line-height:1.2 !important; margin-bottom:7px !important; }
-  .route-point input { width:100% !important; height:auto !important; min-height:0 !important; padding:0 !important; border:0 !important; background:transparent !important; box-shadow:none !important; font-size:22px !important; line-height:1.15 !important; font-weight:900 !important; color:#111827 !important; }
-  .route-point input:focus { box-shadow:none !important; border:0 !important; }
-  .route-start::before, .route-end::before { position:absolute !important; bottom:8px !important; font-size:23px !important; z-index:2 !important; }
-  .route-start::before { content:'📍' !important; left:30px !important; }
-  .route-end::before { content:'📍' !important; right:30px !important; }
-  .route-arrow { width:54px !important; height:54px !important; border-radius:50% !important; display:flex !important; align-items:center !important; justify-content:center !important; background:#25b873 !important; color:#fff !important; font-size:30px !important; font-weight:900 !important; box-shadow:0 5px 12px rgba(37,184,115,.18) !important; }
-
-  #extra-dests-container { margin-top:7px !important; }
-  #extra-dests-container .flex-row { margin:6px 0 !important; }
-  #extra-dests-container .extra-dest-input { min-height:44px !important; height:44px !important; }
-  .route-group > .btn-outline { min-height:46px !important; height:46px !important; margin:10px 0 12px !important; padding:8px 10px !important; border:1.5px dashed #cbd5e0 !important; border-radius:13px !important; background:#fff !important; color:#1559c7 !important; font-size:17px !important; font-weight:800 !important; }
-
-  #app-utility-panel + .card > div[style*="grid-template-columns"] { margin:0 0 12px !important; gap:10px !important; }
-  #app-utility-panel + .card .checkbox-group { min-height:62px !important; height:62px !important; padding:9px 12px !important; box-sizing:border-box !important; margin:0 !important; border-radius:14px !important; background:#fff !important; }
-  #app-utility-panel + .card .checkbox-group:first-child { border:1.5px solid #dfd4f7 !important; }
-  #app-utility-panel + .card .checkbox-group:last-child { border:1.5px solid #f2dfc4 !important; }
-  #app-utility-panel + .card .checkbox-group input { width:25px !important; height:25px !important; min-height:25px !important; flex:0 0 25px !important; }
-  #app-utility-panel + .card .checkbox-group span { font-size:17px !important; font-weight:800 !important; line-height:1.15 !important; }
-  #app-utility-panel + .card .checkbox-group:first-child span::before { content:'⟳' !important; color:#7650d4 !important; font-size:23px !important; margin-right:8px !important; }
-  #app-utility-panel + .card .checkbox-group:last-child span::before { content:'KG' !important; display:inline-flex !important; align-items:center !important; justify-content:center !important; width:29px !important; height:29px !important; margin-right:8px !important; border-radius:7px !important; background:#f18b25 !important; color:#fff !important; font-size:10px !important; }
-
-  .result-display { position:relative !important; min-height:250px !important; box-sizing:border-box !important; padding:24px 22px !important; margin:0 0 16px !important; border-radius:18px !important; border:1.5px solid #d9dfeb !important; background:linear-gradient(135deg,#f8fbff 0%,#fffdf6 70%,#fff 100%) !important; box-shadow:none !important; overflow:hidden !important; }
-  .result-display::after { content:'🧮'; position:absolute !important; right:24px !important; bottom:20px !important; font-size:70px !important; opacity:.9 !important; }
-  .result-display p { font-size:16px !important; line-height:1.35 !important; margin:0 !important; color:#536174 !important; }
-  .result-display p:first-child { display:inline-block !important; width:49% !important; }
-  .result-display p:nth-of-type(3) { display:inline-block !important; width:49% !important; text-align:right !important; }
-  .result-display .text-accent { color:#e7842a !important; }
-  .result-display > div { position:relative !important; margin-top:14px !important; padding-top:18px !important; border-top:2px dashed #d4dbe5 !important; z-index:1 !important; }
-  .result-display > div > span:first-child { font-size:22px !important; color:#111827 !important; font-weight:900 !important; }
-  .result-display .net-total { display:block !important; margin-top:12px !important; color:#16a35f !important; font-size:58px !important; line-height:.95 !important; font-weight:900 !important; letter-spacing:-1px !important; }
-  .result-display #km-info { display:none !important; }
-
-  #app-utility-panel + .card > .btn-save { min-height:64px !important; height:64px !important; margin:0 !important; border-radius:15px !important; font-size:20px !important; background:linear-gradient(90deg,#159b73 0%,#7bd517 100%) !important; box-shadow:0 6px 16px rgba(21,155,115,.18) !important; }
-
-  /* top-level section cards */
-  .app-section-bar { min-height:72px !important; box-sizing:border-box !important; margin:10px 0 7px !important; padding:10px 16px !important; border-radius:17px !important; background:#fff !important; border:1px solid #e0e7f0 !important; box-shadow:0 3px 12px rgba(23,42,70,.05) !important; }
-  .app-section-bar > span:last-child { font-size:25px !important; }
-  .section-copy { display:flex !important; flex-direction:column !important; gap:2px !important; min-width:0 !important; }
-  .section-copy strong { font-size:19px !important; color:#111827 !important; line-height:1.2 !important; }
-  .section-copy span { font-size:12px !important; color:#64748b !important; line-height:1.2 !important; }
-  #settingsManagement + .bar { margin-top:7px !important; }
-  #settingsManagement { border-radius:15px !important; }
-  #historyManagement { padding-top:0 !important; }
-  #historyManagement .bar { margin-top:0 !important; }
-
-  #managementFunctions { padding:8px !important; background:#fff !important; border-radius:15px !important; }
-  .management-link { display:flex !important; align-items:center !important; gap:12px !important; min-height:60px !important; padding:9px 10px !important; margin-bottom:7px !important; border:1px solid #e4e9f1 !important; border-radius:12px !important; background:#fff !important; }
-  .management-link > span { width:40px !important; text-align:center !important; font-size:25px !important; }
-  .management-link strong { display:block !important; font-size:15px !important; color:#172033 !important; }
-  .management-link small { display:block !important; margin-top:2px !important; color:#718096 !important; font-size:11px !important; }
-}
-
-</style>
-
-
-<style id="ui-master-exact-20260814">
-/* UI MASTER — based on user's approved reference screenshot.
-   This is layout implementation, not a redesign. Existing JS/data remain untouched. */
-@media (max-width: 600px) {
   :root {
-    --m-blue:#142c63;
-    --m-blue2:#0d2457;
-    --m-green:#22b66f;
-    --m-purple:#7952d6;
-    --m-orange:#ef7d18;
-    --m-text:#182238;
-    --m-muted:#687486;
-    --m-border:#dce4ed;
+    --ui-navy: #172a46;
+    --ui-blue: #2f80ed;
+    --ui-green: #22a06b;
+    --ui-purple: #7657d9;
+    --ui-orange: #e8892d;
+    --ui-bg: #f5f8fc;
   }
 
   body {
-    margin:0 !important;
-    overflow-x:hidden !important;
-    background:#f4f7fb !important;
-    color:var(--m-text) !important;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(47,128,237,.08), transparent 34%),
+      radial-gradient(circle at 0% 65%, rgba(34,160,107,.06), transparent 32%),
+      var(--ui-bg) !important;
   }
 
-  /* ===== HEADER: exact reference structure ===== */
-  .container > h2 {
-    margin:0 !important;
-    padding:14px 18px !important;
-    min-height:68px !important;
-    box-sizing:border-box !important;
-    display:flex !important;
-    align-items:center !important;
-    gap:10px !important;
-    background:linear-gradient(105deg,var(--m-blue2),var(--m-blue)) !important;
-    color:#fff !important;
-    border-radius:0 0 12px 12px !important;
-    font-size:24px !important;
-    line-height:1 !important;
-    white-space:nowrap !important;
-    overflow:hidden !important;
+  /* ===== 頂部：科技感識別，但不增加功能 ===== */
+  h1 {
+    margin: 0 -8px 8px !important;
+    padding: 14px 16px !important;
+    background: linear-gradient(135deg, #172a46 0%, #24466f 100%) !important;
+    color: #fff !important;
+    border-radius: 0 0 16px 16px !important;
+    font-size: 23px !important;
+    line-height: 1.2 !important;
+    letter-spacing: .6px !important;
+    box-shadow: 0 5px 16px rgba(23,42,70,.15) !important;
   }
 
-  /* Cloud panel is kept functional, but visually docked to the header area. */
+  /* 雲端同步仍是原本功能，只讓它與主題融合 */
   #cloud-sync-card {
-    margin:-52px 14px 10px auto !important;
-    width:205px !important;
-    min-height:42px !important;
-    padding:6px 8px !important;
-    box-sizing:border-box !important;
-    position:relative !important;
-    z-index:5 !important;
-    background:transparent !important;
-    border:0 !important;
-    box-shadow:none !important;
-    color:#fff !important;
-  }
-  #cloud-sync-card > div:first-child {
-    min-height:22px !important;
-    display:flex !important;
-    align-items:center !important;
-    justify-content:flex-end !important;
-  }
-  #cloud-sync-card > div:first-child strong {
-    font-size:0 !important;
-  }
-  #cloud-sync-card > div:first-child strong::before {
-    content:"☁︎" !important;
-    font-size:20px !important;
-    margin-right:7px !important;
+    background: rgba(255,255,255,.96) !important;
+    border: 1px solid rgba(47,128,237,.12) !important;
+    box-shadow: 0 3px 12px rgba(23,42,70,.06) !important;
   }
   #cloud-status {
-    color:#20d47c !important;
-    font-size:13px !important;
-    font-weight:800 !important;
-    white-space:nowrap !important;
-  }
-  #cloud-signed-in {
-    margin-top:3px !important;
-    display:flex !important;
-    justify-content:flex-end !important;
-    gap:6px !important;
-  }
-  #cloud-user {
-    display:none !important;
-  }
-  #cloud-signed-in .btn-save,
-  #cloud-signed-in .btn-outline {
-    width:auto !important;
-    height:30px !important;
-    min-height:30px !important;
-    padding:3px 10px !important;
-    margin:0 !important;
-    font-size:11px !important;
-    border-radius:8px !important;
+    color: var(--ui-green) !important;
+    font-weight: 700 !important;
   }
 
-  /* ===== MAIN CARD ===== */
+  /* ===== 主輸入工作區 ===== */
   #cloud-sync-card + .card {
-    margin:0 14px 12px !important;
-    padding:14px !important;
-    border-radius:20px !important;
-    box-sizing:border-box !important;
-    background:#fff !important;
-    border:1px solid #e0e7ef !important;
-    box-shadow:0 4px 16px rgba(20,44,80,.07) !important;
+    padding: 11px 12px 12px !important;
+    background: rgba(255,255,255,.98) !important;
+    border: 1px solid rgba(23,42,70,.07) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 5px 18px rgba(23,42,70,.07) !important;
   }
 
-  /* Reference: truck row is a single full-width card. */
-  #cloud-sync-card + .card > .form-group:nth-child(2) {
-    display:grid !important;
-    grid-template-columns:48px minmax(0,1fr) 150px !important;
-    align-items:center !important;
-    gap:10px !important;
-    margin:0 0 18px !important;
-    min-height:68px !important;
-    padding:8px 10px !important;
-    box-sizing:border-box !important;
-    border:1px solid #e1e7ef !important;
-    border-radius:15px !important;
-    background:#fff !important;
-    box-shadow:0 3px 10px rgba(25,50,85,.04) !important;
+  /* 車型 */
+  #cloud-sync-card + .card .form-group {
+    margin-bottom: 6px !important;
+  }
+  #cloud-sync-card + .card .form-group label {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #40516a !important;
+    margin-bottom: 3px !important;
+  }
+  #cloud-sync-card + .card .form-group input,
+  #cloud-sync-card + .card .form-group select {
+    height: 40px !important;
+    min-height: 40px !important;
+    border: 1px solid #dbe4ef !important;
+    border-radius: 11px !important;
+    background: #fff !important;
+    box-shadow: inset 0 1px 2px rgba(23,42,70,.03) !important;
+  }
+  #cloud-sync-card + .card .form-group input:focus,
+  #cloud-sync-card + .card .form-group select:focus {
+    border-color: var(--ui-blue) !important;
+    box-shadow: 0 0 0 3px rgba(47,128,237,.10) !important;
+    outline: none !important;
   }
 
-  #cloud-sync-card + .card > .form-group:nth-child(2) label {
-    grid-column:2 !important;
-    grid-row:1 !important;
-    margin:0 !important;
-    font-size:17px !important;
-    font-weight:800 !important;
-    color:#182238 !important;
+  /* 路線標題 */
+  #cloud-sync-card + .card h2 {
+    color: var(--ui-navy) !important;
+    font-size: 19px !important;
+    margin: 6px 0 7px !important;
   }
 
-  #cloud-sync-card + .card > .form-group:nth-child(2)::before {
-    content:"🚚" !important;
-    grid-column:1 !important;
-    grid-row:1 !important;
-    width:48px !important;
-    height:48px !important;
-    display:flex !important;
-    align-items:center !important;
-    justify-content:center !important;
-    border-radius:50% !important;
-    background:#eaf2ff !important;
-    font-size:25px !important;
+  /* 路線輸入：藍起點、綠終點 */
+  #cloud-sync-card + .card input[placeholder="起點"] {
+    border: 1.5px solid rgba(47,128,237,.55) !important;
+    background: linear-gradient(180deg,#fff,#f7fbff) !important;
+  }
+  #cloud-sync-card + .card input[placeholder="終點"] {
+    border: 1.5px solid rgba(34,160,107,.55) !important;
+    background: linear-gradient(180deg,#fff,#f7fffb) !important;
   }
 
-  #cloud-sync-card + .card > .form-group:nth-child(2) select {
-    grid-column:3 !important;
-    grid-row:1 !important;
-    width:100% !important;
-    height:48px !important;
-    min-height:48px !important;
-    margin:0 !important;
-    box-sizing:border-box !important;
-    border-radius:11px !important;
-    font-size:15px !important;
-    font-weight:700 !important;
-  }
-
-  /* Date remains functional but visually compact above the work area. */
-  #cloud-sync-card + .card > .form-group:nth-child(1) {
-    display:grid !important;
-    grid-template-columns:1fr !important;
-    margin:0 0 7px !important;
-  }
-  #cloud-sync-card + .card > .form-group:nth-child(1) label {
-    margin:0 0 4px !important;
-    font-size:12px !important;
-    color:#7b8797 !important;
-  }
-  #cloud-sync-card + .card > .form-group:nth-child(1) input {
-    width:100% !important;
-    height:42px !important;
-    min-height:42px !important;
-    box-sizing:border-box !important;
-    border-radius:11px !important;
-    font-size:15px !important;
-  }
-
-  /* ===== ROUTE ===== */
-  #cloud-sync-card + .card > .form-group:nth-child(3) {
-    margin:0 0 8px !important;
-  }
-  #cloud-sync-card + .card > .form-group:nth-child(3) > label {
-    display:block !important;
-    margin:0 0 9px !important;
-    font-size:20px !important;
-    line-height:1.15 !important;
-    font-weight:900 !important;
-  }
-
-  #cloud-sync-card + .card .flex-row {
-    display:grid !important;
-    grid-template-columns:minmax(0,1fr) 42px minmax(0,1fr) !important;
-    gap:8px !important;
-    align-items:center !important;
-  }
-
-  #cloud-sync-card + .card #start,
-  #cloud-sync-card + .card #dest1 {
-    width:100% !important;
-    height:100px !important;
-    min-height:100px !important;
-    box-sizing:border-box !important;
-    padding:12px 14px !important;
-    border-radius:13px !important;
-    font-size:16px !important;
-    background:linear-gradient(180deg,#fff,#f8fbff) !important;
-  }
-  #cloud-sync-card + .card #start { border:2px solid #78a9e5 !important; }
-  #cloud-sync-card + .card #dest1 { border:2px solid #8bcfb7 !important; }
-
-  #cloud-sync-card + .card .arrow-text {
-    width:42px !important;
-    height:42px !important;
-    border-radius:50% !important;
-    display:flex !important;
-    align-items:center !important;
-    justify-content:center !important;
-    background:#26b875 !important;
-    color:#fff !important;
-    font-size:25px !important;
-    font-weight:900 !important;
-    box-shadow:0 4px 10px rgba(38,184,117,.18) !important;
-  }
-
+  /* 新增停靠點 */
   #cloud-sync-card + .card #addStopBtn {
-    width:100% !important;
-    height:50px !important;
-    min-height:50px !important;
-    margin:8px 0 10px !important;
-    border:1.5px dashed #bfcbd8 !important;
-    border-radius:11px !important;
-    background:#fff !important;
-    color:#125cc0 !important;
-    font-size:15px !important;
-    font-weight:700 !important;
+    min-height: 38px !important;
+    padding: 7px 9px !important;
+    margin: 4px 0 7px !important;
+    border: 1px dashed rgba(47,128,237,.45) !important;
+    color: var(--ui-blue) !important;
+    background: #f8fbff !important;
+    border-radius: 11px !important;
   }
 
-  /* ===== OPTIONS ===== */
-  #cloud-sync-card + .card > div[style*="grid-template-columns"] {
-    display:grid !important;
-    grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
-    gap:10px !important;
-    margin:0 0 10px !important;
-  }
-
+  /* 來回／小超重：雙色快速操作 */
   #cloud-sync-card + .card .checkbox-group {
-    height:58px !important;
-    min-height:58px !important;
-    min-width:0 !important;
-    margin:0 !important;
-    padding:8px 12px !important;
-    box-sizing:border-box !important;
-    display:grid !important;
-    grid-template-columns:34px minmax(0,1fr) !important;
-    align-items:center !important;
-    gap:8px !important;
-    border-radius:12px !important;
-    background:#fff !important;
+    min-height: 42px !important;
+    height: 42px !important;
+    box-sizing: border-box !important;
+    padding: 6px 9px !important;
+    margin: 4px 0 !important;
+    border-radius: 11px !important;
+    background: #fff !important;
+    border: 1px solid #e1e8f1 !important;
+    box-shadow: 0 2px 7px rgba(23,42,70,.035) !important;
   }
-
+  #cloud-sync-card + .card .checkbox-group:first-child {
+    border-color: rgba(118,87,217,.30) !important;
+    background: linear-gradient(90deg,rgba(118,87,217,.055),#fff) !important;
+  }
+  #cloud-sync-card + .card .checkbox-group:last-child {
+    border-color: rgba(232,137,45,.30) !important;
+    background: linear-gradient(90deg,rgba(232,137,45,.06),#fff) !important;
+  }
   #cloud-sync-card + .card .checkbox-group input {
-    width:22px !important;
-    height:22px !important;
-    margin:0 !important;
+    width: 19px !important;
+    height: 19px !important;
+    min-height: 19px !important;
   }
-
   #cloud-sync-card + .card .checkbox-group span {
-    min-width:0 !important;
-    font-size:15px !important;
-    line-height:1.15 !important;
-    white-space:normal !important;
+    font-size: 15px !important;
+    line-height: 1.1 !important;
   }
 
-  /* ===== PRICE CARD ===== */
+  /* 計價結果：白底 + 淡色邊框，不再整塊藍 */
   #cloud-sync-card + .card .result-display {
-    position:relative !important;
-    min-height:245px !important;
-    margin:0 0 10px !important;
-    padding:18px 16px !important;
-    box-sizing:border-box !important;
-    overflow:hidden !important;
-    border-radius:16px !important;
-    border:1px solid #d5e0eb !important;
-    background:linear-gradient(135deg,#fbfdff,#fffdf5) !important;
+    padding: 10px 12px !important;
+    margin: 7px 0 !important;
+    border-radius: 14px !important;
+    background: linear-gradient(135deg,#ffffff 0%,#fffdf7 100%) !important;
+    border: 1px solid rgba(232,137,45,.24) !important;
+    box-shadow: 0 3px 12px rgba(23,42,70,.05) !important;
   }
-
-  #cloud-sync-card + .card .result-display > p:first-child,
-  #cloud-sync-card + .card .result-display > p:nth-child(2) {
-    display:inline-block !important;
-    vertical-align:top !important;
-    width:49% !important;
-    margin:0 !important;
-    font-size:14px !important;
-    line-height:1.4 !important;
-  }
-  #cloud-sync-card + .card .result-display > p:nth-child(2) {
-    text-align:right !important;
+  #cloud-sync-card + .card .result-display p {
+    margin: 3px 0 !important;
+    font-size: 14px !important;
+    line-height: 1.25 !important;
+    color: #66758a !important;
   }
   #cloud-sync-card + .card .result-display hr {
-    margin:10px 0 16px !important;
-    border:0 !important;
-    border-top:2px dashed #d5dce5 !important;
+    margin: 5px 0 !important;
+    border-color: #e9edf3 !important;
   }
-
-  #cloud-sync-card + .card .result-display > div {
-    position:relative !important;
-    min-height:125px !important;
-  }
-
   #cloud-sync-card + .card .result-display .net-total {
-    display:block !important;
-    margin:5px 0 0 !important;
-    font-size:3rem !important;
-    line-height:1 !important;
-    font-weight:900 !important;
-    color:#1aa866 !important;
-    white-space:nowrap !important;
+    font-size: 1.7rem !important;
+    line-height: 1 !important;
+    margin: 2px 0 0 !important;
+    color: var(--ui-green) !important;
+    text-shadow: 0 1px 0 rgba(34,160,107,.08) !important;
   }
 
-  /* Decorative image stays on right, as in the reference. */
-  #cloud-sync-card + .card .result-display img,
-  #cloud-sync-card + .card .result-display .result-icon,
-  #cloud-sync-card + .card .result-display .calculator-icon {
-    max-width:125px !important;
-    max-height:100px !important;
-    object-fit:contain !important;
+  /* 儲存：綠色主動作，與計價成功感連結 */
+  #cloud-sync-card + .card .btn-save {
+    height: 48px !important;
+    min-height: 48px !important;
+    padding: 8px 12px !important;
+    margin-top: 5px !important;
+    border-radius: 12px !important;
+    font-size: 16px !important;
+    background: linear-gradient(135deg,#15966a 0%,#7ccf18 100%) !important;
+    box-shadow: 0 6px 14px rgba(34,160,107,.18) !important;
+  }
+  #cloud-sync-card + .card .btn-save:active {
+    transform: translateY(1px) !important;
+    box-shadow: 0 3px 8px rgba(34,160,107,.15) !important;
   }
 
-  /* ===== SAVE ===== */
-  #cloud-sync-card + .card > .btn-save {
-    width:100% !important;
-    height:54px !important;
-    min-height:54px !important;
-    margin:0 !important;
-    border-radius:13px !important;
-    background:linear-gradient(105deg,#17a873,#79cf18) !important;
-    color:#fff !important;
-    font-size:18px !important;
-    font-weight:900 !important;
-    box-shadow:0 5px 12px rgba(32,172,96,.16) !important;
-  }
-
-  /* ===== LOWER CARDS ===== */
-  #cloud-sync-card ~ .bar {
-    margin:0 14px 9px !important;
-    min-height:68px !important;
-    padding:11px 16px !important;
-    box-sizing:border-box !important;
-    border-radius:15px !important;
-    background:#fff !important;
-    border:1px solid #dce4ed !important;
-    box-shadow:0 2px 8px rgba(25,48,76,.04) !important;
-  }
-  #cloud-sync-card ~ .bar strong,
-  #cloud-sync-card ~ .bar .bar-title {
-    font-size:17px !important;
-  }
-  #cloud-sync-card ~ .bar small,
-  #cloud-sync-card ~ .bar .bar-subtitle {
-    font-size:11px !important;
-  }
-}
-</style>
-
-
-<style id="ui-master-final-20260814">
-@media (max-width:600px){
-  html,body{
-    margin:0!important;
-    padding:0!important;
-    width:100%!important;
-    overflow-x:hidden!important;
-    background:#f4f7fb!important;
-  }
-  .container{
-    width:100%!important;
-    max-width:none!important;
-    margin:0!important;
-    padding:0 0 70px!important;
-    box-sizing:border-box!important;
-  }
-
-  /* ===== HEADER: exactly the approved composition ===== */
-  #app-header{
-    width:100%!important;
-    min-height:70px!important;
-    padding:0 14px 0 18px!important;
-    box-sizing:border-box!important;
-    display:grid!important;
-    grid-template-columns:minmax(0,1fr) auto auto!important;
-    align-items:center!important;
-    gap:7px!important;
-    background:linear-gradient(105deg,#132a61,#0d2457)!important;
-    border-radius:0!important;
-    box-shadow:none!important;
-  }
-  #app-header .app-title{
-    min-width:0!important;
-    display:flex!important;
-    align-items:center!important;
-    gap:8px!important;
-    color:#fff!important;
-    font-size:24px!important;
-    font-weight:900!important;
-    line-height:1!important;
-    white-space:nowrap!important;
-    overflow:hidden!important;
-  }
-  #app-header .app-title-icon{
-    flex:0 0 auto!important;
-    font-size:27px!important;
-  }
-  #header-sync,#header-menu{
-    position:static!important;
-    width:auto!important;
-    height:auto!important;
-    margin:0!important;
-    padding:5px!important;
-    border:0!important;
-    background:transparent!important;
-    box-shadow:none!important;
-  }
-  #header-sync{
-    display:flex!important;
-    align-items:center!important;
-    gap:4px!important;
-    color:#32d987!important;
-    font-size:14px!important;
-    font-weight:800!important;
-    white-space:nowrap!important;
-  }
-  #header-sync .header-cloud{
-    font-size:25px!important;
-    color:#edf5ff!important;
-  }
-  #header-menu{
-    color:#fff!important;
-    font-size:29px!important;
-    line-height:1!important;
-  }
-
-  /* Cloud/date utility is a popover only; it must never sit on top of the header. */
-  #app-utility-panel{
-    display:none!important;
-    position:relative!important;
-    z-index:10!important;
-    margin:8px 14px!important;
-    padding:10px!important;
-    border-radius:15px!important;
-    background:#eef3fa!important;
-    box-sizing:border-box!important;
-  }
-  #app-utility-panel.open{display:block!important}
-  #app-utility-panel .utility-date{
-    display:flex!important;
-    align-items:center!important;
-    justify-content:space-between!important;
-    gap:10px!important;
-    margin:0 0 8px!important;
-    padding:10px 12px!important;
-    background:#fff!important;
-    border:1px solid #dfe6ef!important;
-    border-radius:12px!important;
-  }
-  #app-utility-panel .utility-date span{
-    font-size:14px!important;
-    font-weight:800!important;
-    color:#53657a!important;
-  }
-  #app-utility-panel .utility-date input{
-    width:auto!important;
-    min-width:145px!important;
-    height:38px!important;
-    box-sizing:border-box!important;
-    padding:5px 8px!important;
-    border-radius:9px!important;
-    font-size:15px!important;
-  }
-  #cloud-sync-card{
-    margin:0!important;
-    padding:12px!important;
-    border-radius:13px!important;
-  }
-
-  /* Flatten accidental nested cards; preserve their contents/functions. */
-  .container > .card > .card{
-    margin:0!important;
-    padding:0!important;
-    border:0!important;
-    border-radius:0!important;
-    background:transparent!important;
-    box-shadow:none!important;
-  }
-
-  /* ===== MAIN WORK CARD ===== */
-  .container > .card{
-    width:calc(100% - 28px)!important;
-    margin:12px 14px 10px!important;
-    padding:14px!important;
-    box-sizing:border-box!important;
-    border-radius:20px!important;
-    background:#fff!important;
-    border:1px solid #e0e7ef!important;
-    box-shadow:0 5px 18px rgba(20,44,80,.07)!important;
-  }
-
-  /* ===== TRUCK ROW ===== */
-  .ton-group{
-    width:100%!important;
-    min-height:76px!important;
-    height:76px!important;
-    margin:0 0 18px!important;
-    padding:9px 12px 9px 16px!important;
-    box-sizing:border-box!important;
-    display:grid!important;
-    grid-template-columns:50px minmax(0,1fr) 142px!important;
-    align-items:center!important;
-    gap:10px!important;
-    border:1px solid #e0e6ee!important;
-    border-radius:16px!important;
-    background:#fff!important;
-    box-shadow:0 3px 10px rgba(23,42,70,.05)!important;
-  }
-  .ton-title{
-    display:contents!important;
-  }
-  .ton-title .ton-icon{
-    grid-column:1!important;
-    width:50px!important;
-    height:50px!important;
-    display:flex!important;
-    align-items:center!important;
-    justify-content:center!important;
-    border-radius:50%!important;
-    background:#eaf2ff!important;
-    font-size:25px!important;
-  }
-  .ton-title strong{
-    grid-column:2!important;
-    font-size:18px!important;
-    line-height:1.1!important;
-    white-space:nowrap!important;
-    color:#182238!important;
-  }
-  #ton{
-    grid-column:3!important;
-    width:100%!important;
-    height:48px!important;
-    min-height:48px!important;
-    margin:0!important;
-    padding:0 10px!important;
-    box-sizing:border-box!important;
-    border-radius:11px!important;
-    font-size:16px!important;
-    font-weight:800!important;
-  }
-
-  /* ===== ROUTE ===== */
-  .route-group{
-    margin:0 0 10px!important;
-  }
-  .route-group > label{
-    display:block!important;
-    margin:0 0 10px!important;
-    font-size:21px!important;
-    line-height:1.1!important;
-    font-weight:900!important;
-    color:#182238!important;
-  }
-  .route-row{
-    display:grid!important;
-    grid-template-columns:minmax(0,1fr) 52px minmax(0,1fr)!important;
-    align-items:center!important;
-    gap:8px!important;
-  }
-  .route-point{
-    height:160px!important;
-    min-height:160px!important;
-    box-sizing:border-box!important;
-    padding:14px!important;
-    border-radius:14px!important;
-    overflow:hidden!important;
-    display:flex!important;
-    flex-direction:column!important;
-    justify-content:flex-start!important;
-  }
-  .route-start{border:2px solid #78a9e5!important;background:linear-gradient(180deg,#fff 70%,#f6faff)!important}
-  .route-end{border:2px solid #8bcfb7!important;background:linear-gradient(180deg,#fff 70%,#f5fcf8)!important}
-  .route-point > span{
-    font-size:14px!important;
-    color:#667386!important;
-    margin-bottom:4px!important;
-  }
-  .route-point input{
-    width:100%!important;
-    height:42px!important;
-    min-height:42px!important;
-    margin:0!important;
-    padding:0!important;
-    border:0!important;
-    background:transparent!important;
-    box-shadow:none!important;
-    font-size:20px!important;
-    font-weight:800!important;
-  }
-  .route-row .arrow-text{
-    width:52px!important;
-    height:52px!important;
-    margin:0!important;
-    display:flex!important;
-    align-items:center!important;
-    justify-content:center!important;
-    border-radius:50%!important;
-    background:#28b977!important;
-    color:#fff!important;
-    font-size:28px!important;
-    line-height:1!important;
-    box-shadow:0 4px 10px rgba(40,185,119,.18)!important;
-  }
-
-  #addStopBtn{
-    width:100%!important;
-    height:50px!important;
-    min-height:50px!important;
-    margin:10px 0 10px!important;
-    padding:0 10px!important;
-    border:1.5px dashed #c7d0da!important;
-    border-radius:12px!important;
-    background:#fff!important;
-    color:#145ec2!important;
-    font-size:16px!important;
-    font-weight:800!important;
-  }
-
-  /* ===== OPTIONS ===== */
-  .container > .card > .card > div[style*="grid-template-columns"],
-  .container > .card > div[style*="grid-template-columns"]{
-    display:grid!important;
-    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
-    gap:10px!important;
-    margin:0 0 10px!important;
-  }
-  .checkbox-group{
-    width:100%!important;
-    min-width:0!important;
-    height:62px!important;
-    min-height:62px!important;
-    margin:0!important;
-    padding:9px 12px!important;
-    box-sizing:border-box!important;
-    display:flex!important;
-    align-items:center!important;
-    gap:9px!important;
-    border-radius:14px!important;
-    background:#fff!important;
-  }
-  .checkbox-group:first-child{border:1.5px solid #dfd4f7!important}
-  .checkbox-group:last-child{border:1.5px solid #f2dfc4!important}
-  .checkbox-group input{
-    width:25px!important;
-    height:25px!important;
-    min-width:25px!important;
-    min-height:25px!important;
-    margin:0!important;
-  }
-  .checkbox-group span{
-    min-width:0!important;
-    font-size:16px!important;
-    line-height:1.15!important;
-    font-weight:800!important;
-    white-space:nowrap!important;
-  }
-  .checkbox-group:first-child span{color:#182238!important}
-  .checkbox-group:first-child span:before{
-    content:'⟳'!important;
-    color:#7650d4!important;
-    font-size:23px!important;
-    margin-right:7px!important;
-  }
-  .checkbox-group:last-child span{color:#e25f42!important}
-  .checkbox-group:last-child span:before{
-    content:'KG'!important;
-    display:inline-flex!important;
-    align-items:center!important;
-    justify-content:center!important;
-    width:29px!important;
-    height:29px!important;
-    margin-right:7px!important;
-    border-radius:7px!important;
-    background:#f18b25!important;
-    color:#fff!important;
-    font-size:10px!important;
-  }
-
-  /* ===== PRICE CARD ===== */
-  .result-display{
-    position:relative!important;
-    min-height:250px!important;
-    margin:0 0 12px!important;
-    padding:22px 18px!important;
-    box-sizing:border-box!important;
-    overflow:hidden!important;
-    border-radius:18px!important;
-    border:1.5px solid #d7e0ea!important;
-    background:linear-gradient(135deg,#fbfdff,#fffdf4)!important;
-  }
-  .result-display > p{
-    margin:0!important;
-    font-size:15px!important;
-    line-height:1.45!important;
-  }
-  .result-display > p:nth-of-type(2){
-    text-align:right!important;
-  }
-  .result-display hr{
-    margin:12px 0 18px!important;
-    border:0!important;
-    border-top:2px dashed #d3dbe4!important;
-  }
-  .result-display > div{
-    min-height:120px!important;
-  }
-  .result-display .net-total{
-    display:block!important;
-    margin-top:10px!important;
-    color:#16a35f!important;
-    font-size:58px!important;
-    line-height:.95!important;
-    font-weight:900!important;
-    letter-spacing:-1px!important;
-  }
-
-  #saveBtn,.container > .card .btn-save{
-    width:100%!important;
-    height:62px!important;
-    min-height:62px!important;
-    margin:0!important;
-    border-radius:15px!important;
-    background:linear-gradient(90deg,#159b73,#7bd517)!important;
-    color:#fff!important;
-    font-size:20px!important;
-    font-weight:900!important;
-    box-shadow:0 6px 16px rgba(21,155,115,.18)!important;
-  }
-
-  /* The old Excel export button is not part of the approved home UI. */
-  .container > .card .btn-export{display:none!important}
-
-  /* ===== LOWER SECTION CARDS: keep the approved structure ===== */
-  .app-section-bar{
-    width:calc(100% - 28px)!important;
-    min-height:72px!important;
-    margin:9px 14px 7px!important;
-    padding:10px 16px!important;
-    box-sizing:border-box!important;
-    border-radius:17px!important;
-    background:#fff!important;
-    border:1px solid #e0e7ef!important;
-    box-shadow:0 3px 12px rgba(23,42,70,.05)!important;
-  }
-  .app-section-bar .section-copy strong{
-    font-size:17px!important;
-  }
-  .app-section-bar .section-copy span{
-    font-size:11px!important;
+  /* 管理入口：維持原本兩個入口，不新增快捷列 */
+  .bar {
+    border-radius: 14px !important;
   }
 }
 </style>
@@ -1339,35 +661,23 @@ h2 {
 <body>
 
 <div class="container">
-<header id="app-header">
-  <div class="app-title"><span class="app-title-icon">🚚</span><span>車趟管理系統</span></div>
-  <button type="button" id="header-sync" aria-label="開啟雲端同步設定"><span class="header-cloud">☁︎</span><span id="header-cloud-status">已同步</span></button>
-  <button type="button" id="header-menu" aria-label="更多選項">⋮</button>
-</header>
+<h2>🚚 物流業績管理系統</h2>
 
-<div id="app-utility-panel" aria-hidden="true">
-  <div class="utility-date"><span>選擇日期</span><input type="date" id="date"></div>
-  <div class="card" id="cloud-sync-card">
+<div class="card" id="cloud-sync-card">
 <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;"><strong style="color:var(--primary); font-size:18px;">☁️ 雲端同步</strong><span id="cloud-status" class="cloud-status">尚未登入</span></div>
 <div id="cloud-signed-out" style="margin-top:12px;"><label for="cloud-email">登入 Email</label><input type="email" id="cloud-email" autocomplete="email" inputmode="email" placeholder="name@example.com"><button type="button" class="btn btn-save" style="margin:12px 0 0;" onclick="window.TripCloud.sendOtp()">寄送登入連結</button></div>
 <div id="cloud-signed-in" style="display:none; margin-top:12px;"><div id="cloud-user" class="cloud-user"></div><button type="button" class="btn btn-save" style="margin-bottom:8px;" onclick="window.TripCloud.syncNow(true)">立即同步</button><button type="button" class="btn-outline" onclick="window.TripCloud.signOut()">登出</button></div>
-  </div>
 </div>
 
 <div class="card">
-
-<div class="card">
-<div class="form-group ton-group">
-  <div class="ton-title"><span class="ton-icon">🚚</span><strong>車型噸數</strong></div>
-  <select id="ton"><option value="1.5" selected>1.5 噸</option><option value="3.5">3.5 噸</option><option value="0.7">0.7 噸</option></select>
+<div class="form-group"><label>選擇日期</label><input type="date" id="date"></div>
+<div class="form-group">
+<label>車型噸數</label>
+<select id="ton"><option value="1.5" selected>1.5 噸</option><option value="3.5">3.5 噸</option><option value="0.7">0.7 噸</option></select>
 </div>
-<div class="form-group route-group">
+<div class="form-group">
 <label>運輸路線</label>
-<div class="route-row">
-  <div class="route-point route-start"><span>起點</span><input type="text" id="start" placeholder="" list="location-options"></div>
-  <span class="route-arrow">➜</span>
-  <div class="route-point route-end"><span>終點</span><input type="text" id="dest1" placeholder="" list="location-options"></div>
-</div>
+<div class="flex-row"><input type="text" id="start" placeholder="起點" list="location-options"><span class="arrow-text">➡</span><input type="text" id="dest1" placeholder="終點" list="location-options"></div>
 <div id="extra-dests-container"></div>
 <button type="button" class="btn-outline" onclick="addExtraDest()">＋ 新增停靠點 (每點 NT200元)</button>
 </div>
@@ -1392,8 +702,8 @@ h2 {
 
 <datalist id="location-options"></datalist>
 
-<div class="bar app-section-bar" onclick="togglePanel('settingsManagement')">
-  <div class="section-copy"><strong>⚙️ 設定管理</strong><span>路線管理、費率設定、系統設定、資料備份等</span></div><span class="section-arrow">▼</span>
+<div class="bar" onclick="togglePanel('settingsManagement')">
+  <span>⚙️ 設定管理</span><span>▼</span>
 </div>
 
 <div id="settingsManagement" class="panel">
@@ -1485,8 +795,8 @@ h2 {
 
 <datalist id="location-options"></datalist>
 
-<div class="bar app-section-bar" onclick="togglePanel('historyManagement')">
-  <div class="section-copy"><strong>📊 歷史車趟與業績統計</strong><span>查看車趟記錄、業績統計與收入分析</span></div><span class="section-arrow">▼</span>
+<div class="bar" onclick="togglePanel('historyManagement')">
+  <span>📅 歷史車趟與業績統計</span><span>▼</span>
 </div>
 
 <div id="historyManagement" class="panel" style="margin-top:-2px; display:none;">
@@ -1498,15 +808,6 @@ h2 {
 </div>
 </div>
 
-
-<div class="bar app-section-bar" onclick="togglePanel('managementFunctions')">
-  <div class="section-copy"><strong>🧰 管理功能</strong><span>備份、雲端還原、地點與回收桶</span></div><span class="section-arrow">▼</span>
-</div>
-<div id="managementFunctions" class="panel management-panel">
-  <div class="management-link" onclick="togglePanel('dataManagement'); togglePanel('settingsManagement');"><span>☁️</span><div><strong>資料備份與雲端還原</strong><small>備份、恢復與雲端歷史資料</small></div></div>
-  <div class="management-link" onclick="togglePanel('locationManagement'); togglePanel('settingsManagement');"><span>📍</span><div><strong>地點管理</strong><small>管理常用地點與自動完成清單</small></div></div>
-  <div class="management-link" onclick="togglePanel('trashManagement'); togglePanel('settingsManagement');"><span>🗑️</span><div><strong>資源回收桶</strong><small>查看與還原刪除的車趟</small></div></div>
-</div>
 
 </div>
 
@@ -3059,56 +2360,5 @@ window.location.reload();
 });
 }
 </script>
-<script id="ui-exact-v19-js">
-(function(){
-  function setupExactUI(){
-    var utility=document.getElementById('app-utility-panel');
-    var menu=document.getElementById('header-menu');
-    var sync=document.getElementById('header-sync');
-    var cloudStatus=document.getElementById('cloud-status');
-    var headerStatus=document.getElementById('header-cloud-status');
-    if(!utility) return;
-    function toggleUtility(){
-      var open=utility.classList.toggle('open');
-      utility.setAttribute('aria-hidden', open ? 'false' : 'true');
-    }
-    if(menu) menu.addEventListener('click', toggleUtility);
-    if(sync) sync.addEventListener('click', toggleUtility);
-    if(cloudStatus && headerStatus){
-      var syncHeader=function(){ headerStatus.textContent=(cloudStatus.textContent||'').trim() || '已同步'; };
-      syncHeader();
-      new MutationObserver(syncHeader).observe(cloudStatus,{childList:true,characterData:true,subtree:true});
-    }
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',setupExactUI); else setupExactUI();
-})();
-</script>
-
-<script id="date-default-fix-20260814">
-(function(){
-  function setToday(){
-    var el=document.getElementById('date');
-    if(!el) return;
-    var now=new Date();
-    var y=now.getFullYear();
-    var m=String(now.getMonth()+1).padStart(2,'0');
-    var d=String(now.getDate()).padStart(2,'0');
-    el.value=y+'-'+m+'-'+d;
-  }
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',function(){
-      setToday();
-      setTimeout(setToday,100);
-    });
-  }else{
-    setToday();
-    setTimeout(setToday,100);
-  }
-  window.addEventListener('pageshow',function(){
-    setTimeout(setToday,100);
-  });
-})();
-</script>
-
 </body>
 </html>
