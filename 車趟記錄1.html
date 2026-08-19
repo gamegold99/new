@@ -1429,7 +1429,7 @@ var isVisible = find(listId) ? find(listId).style.display : 'none';
 h.push('<div class="month-group"><div class="month-header" onclick="var el=find(\'', listId, '\'); el.style.display=(el.style.display===\'block\'?\'none\':\'block\')">',
 '<div><div style="font-size:1.2em; font-weight:800;">📅 ', m.replace('-','年'), '月</div><div class="month-count">共 ', grps[m].items.length, ' 趟</div></div>',
 '<div style="text-align:right;"><div style="font-size:13px; color:#718096;">原價總額: ', grps[m].sum.toLocaleString(), ' 元</div>',
-'<div class="month-income">實領 NT ', Math.round(grps[m].completedSum*0.93).toLocaleString(), ' 元</div></div></div>',
+'<div class="month-income">實領 NT ', Math.round(grps[m].completedSum*0.92).toLocaleString(), ' 元</div></div></div>',
 '<div class="month-list" id="', listId, '" style="display:', isVisible, '; padding:15px; background:#f7fafc;">', itemsH.join(''), '</div></div>');
 });
 find('logContainer').innerHTML = h.join('');
@@ -2364,8 +2364,8 @@ function exportExcel() {
             '<Cell ss:StyleID="Money"><Data ss:Type="Number">' + total + '</Data></Cell>' +
             '</Row>';
         xml += '<Row>' + cell('') + cell('') + cell('') + cell('') +
-            cell('當月實領金額(扣7%)：') +
-            '<Cell ss:StyleID="Money"><Data ss:Type="Number">' + Math.round(completedTotal * 0.93) + '</Data></Cell>' +
+            cell('當月實領金額(扣8%)：') +
+            '<Cell ss:StyleID="Money"><Data ss:Type="Number">' + Math.round(completedTotal * 0.92) + '</Data></Cell>' +
             '</Row>';
 
         xml += '</Table></Worksheet>';
